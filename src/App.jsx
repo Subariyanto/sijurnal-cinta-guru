@@ -44,8 +44,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <HashRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </HashRouter>
   );
 }
