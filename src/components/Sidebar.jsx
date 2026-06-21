@@ -20,7 +20,7 @@ const allMenus = [
   { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
   { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers, roles: null },
   { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
-  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin'] },
+  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kepala_madrasah', 'operator', 'pengawas'] },
 ];
 
 export default function Sidebar({ open, onClose }) {

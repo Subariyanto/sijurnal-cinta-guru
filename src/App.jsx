@@ -39,7 +39,7 @@ function AppRoutes() {
         <Route path="observasi" element={<Observasi />} />
         <Route path="validasi" element={<ProtectedRoute roles={['kepala_madrasah', 'pengawas', 'admin']}><Validasi /></ProtectedRoute>} />
         <Route path="laporan" element={<Laporan />} />
-        <Route path="pengaturan" element={<ProtectedRoute roles={['admin']}><Pengaturan /></ProtectedRoute>} />
+        <Route path="pengaturan" element={<ProtectedRoute roles={['admin', 'kepala_madrasah', 'operator', 'pengawas']}><Pengaturan /></ProtectedRoute>} />
         <Route path="jurnal/:id" element={<DetailJurnal />} />
         <Route path="laporan-pengawas" element={<ProtectedRoute roles={['pengawas', 'admin']}><LaporanPengawas /></ProtectedRoute>} />
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />
