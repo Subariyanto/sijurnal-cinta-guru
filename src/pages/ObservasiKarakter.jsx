@@ -312,7 +312,7 @@ export default function ObservasiKarakter() {
             </div>
           </div>
 
-          <div className="text-center text-xs text-gray-400 mt-12 pt-6 border-t print:block hidden">Dokumen ini dihasilkan oleh SiJurnal Cinta Guru — Lembar Observasi Karakter Murid</div>
+          <div className="text-center text-xs text-gray-400 mt-12 pt-6 border-t print:block hidden">Dokumen ini dihasilkan oleh e-Jurnal KBC Madrasah - Lembar Observasi Karakter Murid</div>
         </div>
       </div>
     );

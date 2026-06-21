@@ -43,7 +43,7 @@ export default function Sidebar({ open, onClose }) {
       <aside className={`fixed top-0 left-0 h-full w-64 bg-[#102a4d] text-white z-50 transform transition-transform duration-200 overflow-y-auto ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
           <div>
-            <h1 className="font-bold text-base">SiJurnal Cinta Guru</h1>
+            <h1 className="font-bold text-base">e-Jurnal KBC Madrasah</h1>
             <p className="text-[10px] text-blue-200">Kurikulum Berbasis Cinta</p>
           </div>
           <button onClick={onClose} className="lg:hidden p-1 hover:bg-[#1e3a5f] rounded"><X className="w-5 h-5" /></button>

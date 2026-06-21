@@ -14,7 +14,7 @@ export default function Pengaturan() {
   const [settings, setSettings] = useState({
     tahunPelajaran: data.pengaturan?.tahunPelajaran || '2025/2026',
     semester: data.pengaturan?.semester || 'Ganjil',
-    namaAplikasi: data.pengaturan?.namaAplikasi || 'SiJurnal Cinta Guru',
+    namaAplikasi: data.pengaturan?.namaAplikasi || 'e-Jurnal KBC Madrasah',
     logoKemenag: data.pengaturan?.logoKemenag || '',
     logoMadrasah: data.pengaturan?.logoMadrasah || '',
   });
@@ -72,7 +72,7 @@ export default function Pengaturan() {
     setSettings({
       tahunPelajaran: seed.pengaturan?.tahunPelajaran || '2025/2026',
       semester: seed.pengaturan?.semester || 'Ganjil',
-      namaAplikasi: seed.pengaturan?.namaAplikasi || 'SiJurnal Cinta Guru',
+      namaAplikasi: seed.pengaturan?.namaAplikasi || 'e-Jurnal KBC Madrasah',
       logoKemenag: seed.pengaturan?.logoKemenag || '',
       logoMadrasah: seed.pengaturan?.logoMadrasah || '',
     });
