@@ -1,0 +1,215 @@
+import React, { useState } from 'react';
+import { getData, updateCollection, addItem, updateItem, deleteItem, generateId } from '../lib/store';
+import { Plus, Search, Edit, Trash2, X, Save, Building2, Users, BookOpen, Heart } from 'lucide-react';
+import { JENJANG, NILAI_PANCA_CINTA, ROLE_LIST } from '../lib/store';
+
+function useDataRefresher() {
+  const [_, setTick] = useState(0);
+  return () => setTick(t => t + 1);
+}
+
+function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
+
+export default function MasterData() {
+  const [tab, setTab] = useState('madrasah');
+  const refresh = useDataRefresher();
+
+  const tabs = [
+    { key: 'madrasah', label: 'Data Madrasah', icon: Building2 },
+    { key: 'guru', label: 'Data Guru', icon: Users },
+    { key: 'kelas', label: 'Data Kelas', icon: BookOpen },
+    { key: 'indikator', label: 'Indikator Panca Cinta', icon: Heart },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-gray-800">Master Data</h2>
+        <p className="text-sm text-gray-500">Kelola data madrasah, guru, kelas, dan indikator KBC</p>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${tab === t.key ? 'bg-[#102a4d] text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+            <t.icon className="w-4 h-4" />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'madrasah' && <MadrasahTab refresh={refresh} />}
+      {tab === 'guru' && <GuruTab refresh={refresh} />}
+      {tab === 'kelas' && <KelasTab refresh={refresh} />}
+      {tab === 'indikator' && <IndikatorTab refresh={refresh} />}
+    </div>
+  );
+}
+
+function MadrasahTab({ refresh }) {
+  const data = getData();
+  const [list, setList] = useState(data.madrasah);
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({});
+
+  const filtered = list.filter(m => `${m.nama} ${m.nsmNpsn} ${m.kecamatan}`.toLowerCase().includes(search.toLowerCase()));
+
+  const openAdd = () => { setForm({ nama:'', nsmNpsn:'', jenjang:'MI', alamat:'', kepalaMadrasah:'', kecamatan:'', pengawas:'' }); setShowModal(true); };
+  const openEdit = (m) => { setForm(m); setShowModal(true); };
+
+  const save = () => {
+    if (!form.nama) return showToast('Nama madrasah wajib diisi','error');
+    if (form.id) { updateItem('madrasah', form.id, form); showToast('Madrasah diperbarui','success'); }
+    else { addItem('madrasah', { ...form, id: generateId() }); showToast('Madrasah ditambahkan','success'); }
+    setList(getData().madrasah); setShowModal(false); refresh();
+  };
+
+  const del = (id) => { if (!confirm('Hapus madrasah ini?')) return; deleteItem('madrasah', id); setList(getData().madrasah); refresh(); showToast('Madrasah dihapus','success'); };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari madrasah..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
+        <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NSM/NPSN</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Kecamatan</th><th className="py-3 px-4">Kepala</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(m => (<tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{m.nama}</td><td className="py-2.5 px-4 text-xs">{m.nsmNpsn}</td><td className="py-2.5 px-4 text-xs">{m.jenjang}</td><td className="py-2.5 px-4 text-xs">{m.kecamatan}</td><td className="py-2.5 px-4 text-xs text-gray-500">{m.kepalaMadrasah}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(m)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(m.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{form.id?'Edit':'Tambah'} Madrasah</h3><button onClick={()=>setShowModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button></div>
+            <div className="p-4 space-y-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nama</label><input value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
+              <div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">NSM/NPSN</label><input value={form.nsmNpsn} onChange={e=>setForm({...form,nsmNpsn:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Jenjang</label><select value={form.jenjang} onChange={e=>setForm({...form,jenjang:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">{JENJANG.map(j=><option key={j}>{j}</option>)}</select></div></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label><input value={form.alamat} onChange={e=>setForm({...form,alamat:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Kepala Madrasah</label><input value={form.kepalaMadrasah} onChange={e=>setForm({...form,kepalaMadrasah:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
+              <div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label><input value={form.kecamatan} onChange={e=>setForm({...form,kecamatan:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Pengawas</label><input value={form.pengawas} onChange={e=>setForm({...form,pengawas:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div>
+            </div>
+            <div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button><button onClick={()=>setShowModal(false)} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuruTab({ refresh }) {
+  const data = getData();
+  const [list, setList] = useState(data.guru);
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({});
+
+  const filtered = list.filter(g => `${g.nama} ${g.nip||''} ${g.mapel||''}`.toLowerCase().includes(search.toLowerCase()));
+  const madrasahList = getData().madrasah;
+
+  const openAdd = () => { setForm({ nama:'', nip:'', jabatan:'', mapel:'', madrasahId:'', noHP:'', email:'', userId:'' }); setShowModal(true); };
+  const openEdit = (g) => { setForm(g); setShowModal(true); };
+  const save = () => {
+    if (!form.nama) return showToast('Nama guru wajib diisi','error');
+    const m = madrasahList.find(x=>x.id===form.madrasahId);
+    const payload = { ...form, madrasahNama: m?.nama||'' };
+    if (form.id) { updateItem('guru', form.id, payload); showToast('Guru diperbarui','success'); }
+    else { addItem('guru', { ...payload, id: generateId() }); showToast('Guru ditambahkan','success'); }
+    setList(getData().guru); setShowModal(false); refresh();
+  };
+  const del = (id) => { if (!confirm('Hapus guru ini?')) return; deleteItem('guru', id); setList(getData().guru); refresh(); showToast('Guru dihapus','success'); };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3 flex-wrap"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari guru..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIP</th><th className="py-3 px-4">Mapel</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(g=>(<tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{g.nama}</td><td className="py-2.5 px-4 text-xs">{g.nip||'-'}</td><td className="py-2.5 px-4 text-xs">{g.mapel||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{g.madrasahNama||'-'}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(g)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(g.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      {showModal && <GuruModal form={form} setForm={setForm} save={save} close={()=>setShowModal(false)} madrasahList={madrasahList} />}
+    </div>
+  );
+}
+
+function GuruModal({ form, setForm, save, close, madrasahList }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{form.id?'Edit':'Tambah'} Guru</h3><button onClick={close} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button></div><div className="p-4 space-y-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Nama Guru</label><input value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">NIP/NUPTK</label><input value={form.nip} onChange={e=>setForm({...form,nip:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label><input value={form.jabatan} onChange={e=>setForm({...form,jabatan:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Mapel/Kelas</label><input value={form.mapel} onChange={e=>setForm({...form,mapel:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Madrasah</label><select value={form.madrasahId} onChange={e=>setForm({...form,madrasahId:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Pilih...</option>{madrasahList.map(m=><option key={m.id} value={m.id}>{m.nama}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">No HP</label><input value={form.noHP} onChange={e=>setForm({...form,noHP:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div><label className="block text-sm font-medium text-gray-700 mb-1">User ID (username)</label><input value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button><button onClick={close} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button></div></div></div>
+  );
+}
+
+function KelasTab({ refresh }) {
+  const data = getData();
+  const [list, setList] = useState(data.kelas);
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({});
+  const madrasahList = getData().madrasah;
+
+  const filtered = list.filter(k => `${k.nama} ${k.jenjang} ${k.waliKelas||''}`.toLowerCase().includes(search.toLowerCase()));
+
+  const openAdd = () => { setForm({ nama:'', jenjang:'MI', waliKelas:'', jmlSiswaL:0, jmlSiswaP:0, tahunPelajaran:'2026/2027', madrasahId:'' }); setShowModal(true); };
+  const openEdit = (k) => { setForm(k); setShowModal(true); };
+  const save = () => {
+    if (!form.nama) return showToast('Nama kelas wajib diisi','error');
+    if (form.id) { updateItem('kelas', form.id, form); showToast('Kelas diperbarui','success'); }
+    else { addItem('kelas', { ...form, id: generateId() }); showToast('Kelas ditambahkan','success'); }
+    setList(getData().kelas); setShowModal(false); refresh();
+  };
+  const del = (id) => { if (!confirm('Hapus kelas ini?')) return; deleteItem('kelas', id); setList(getData().kelas); refresh(); showToast('Kelas dihapus','success'); };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3 flex-wrap"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari kelas..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Kelas</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Wali Kelas</th><th className="py-3 px-4">L</th><th className="py-3 px-4">P</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(k=>(<tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{k.nama}</td><td className="py-2.5 px-4 text-xs">{k.jenjang}</td><td className="py-2.5 px-4 text-xs">{k.waliKelas||'-'}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaL}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaP}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(k)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(k.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{form.id?'Edit':'Tambah'} Kelas</h3><button onClick={()=>setShowModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button></div><div className="p-4 space-y-3"><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label><input value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Jenjang</label><select value={form.jenjang} onChange={e=>setForm({...form,jenjang:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">{JENJANG.map(j=><option key={j}>{j}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Wali Kelas</label><input value={form.waliKelas} onChange={e=>setForm({...form,waliKelas:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Madrasah</label><select value={form.madrasahId} onChange={e=>setForm({...form,madrasahId:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Pilih...</option>{madrasahList.map(m=><option key={m.id} value={m.id}>{m.nama}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Siswa Laki-laki</label><input type="number" min="0" value={form.jmlSiswaL} onChange={e=>setForm({...form,jmlSiswaL:parseInt(e.target.value)||0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Siswa Perempuan</label><input type="number" min="0" value={form.jmlSiswaP} onChange={e=>setForm({...form,jmlSiswaP:parseInt(e.target.value)||0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Tahun Pelajaran</label><input value={form.tahunPelajaran} onChange={e=>setForm({...form,tahunPelajaran:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button><button onClick={()=>setShowModal(false)} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button></div></div></div>
+      )}
+    </div>
+  );
+}
+
+function IndikatorTab({ refresh }) {
+  const data = getData();
+  const [indikatorPC, setIndikatorPC] = useState(data.indikatorPancaCinta);
+  const [expanded, setExpanded] = useState(null);
+  const [addIndikator, setAddIndikator] = useState({ pcId: null, teks: '' });
+
+  const saveAll = (arr) => { updateCollection('indikatorPancaCinta', arr); setIndikatorPC(arr); refresh(); showToast('Indikator diperbarui','success'); };
+
+  const addNewIndikator = (pcId) => {
+    if (!addIndikator.teks.trim()) return;
+    const updated = indikatorPC.map(pc => {
+      if (pc.id === pcId) return { ...pc, indikator: [...pc.indikator, { id: generateId(), teks: addIndikator.teks.trim() }] };
+      return pc;
+    });
+    saveAll(updated);
+    setAddIndikator({ pcId: null, teks: '' });
+  };
+
+  const deleteIndikator = (pcId, indId) => { const updated = indikatorPC.map(pc => pc.id === pcId ? { ...pc, indikator: pc.indikator.filter(i => i.id !== indId) } : pc); saveAll(updated); };
+  const editIndikator = (pcId, indId, newTeks) => { const updated = indikatorPC.map(pc => pc.id === pcId ? { ...pc, indikator: pc.indikator.map(i => i.id === indId ? { ...i, teks: newTeks } : i) } : pc); saveAll(updated); showToast('Indikator diperbarui','success'); setIndikatorPC(getData().indikatorPancaCinta); };
+
+  return (
+    <div className="space-y-4">
+      {indikatorPC.map(pc => (
+        <div key={pc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+          <button onClick={() => setExpanded(expanded === pc.id ? null : pc.id)} className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition">
+            <div className="flex items-center gap-3"><Heart className="w-5 h-5 text-red-500" fill="currentColor" /><span className="font-semibold text-gray-800">{pc.nama}</span><span className="text-xs text-gray-500">({pc.indikator.length} indikator)</span></div>
+            <span className="text-gray-400">{expanded === pc.id ? '▲' : '▼'}</span>
+          </button>
+          {expanded === pc.id && (
+            <div className="p-4 space-y-3">
+              {pc.indikator.map(ind => <IndikatorRow key={ind.id} ind={ind} pcId={pc.id} onEdit={editIndikator} onDelete={deleteIndikator} />)}
+              <div className="flex gap-2 pt-2 border-t">
+                <input type="text" placeholder="Tambah indikator baru..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" value={addIndikator.pcId === pc.id ? addIndikator.teks : ''} onChange={e => setAddIndikator({ pcId: pc.id, teks: e.target.value })} onKeyDown={e => e.key === 'Enter' && addNewIndikator(pc.id)} />
+                <button onClick={() => addNewIndikator(pc.id)} className="px-4 py-2 bg-[#2fa295] text-white rounded-lg text-sm font-medium hover:bg-[#278f84]"><Plus className="w-4 h-4" /></button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IndikatorRow({ ind, pcId, onEdit, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [teks, setTeks] = useState(ind.teks);
+  const handleSave = () => { if (!teks.trim()) return; onEdit(pcId, ind.id, teks.trim()); setEditing(false); };
+  return (
+    <div className="flex items-center gap-2 py-1.5">
+      {editing ? (<><input type="text" value={teks} onChange={e=>setTeks(e.target.value)} className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" onKeyDown={e=>e.key==='Enter'&&handleSave()} /><button onClick={handleSave} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Save className="w-4 h-4"/></button><button onClick={()=>{setTeks(ind.teks);setEditing(false)}} className="p-1.5 text-gray-400 hover:bg-gray-50 rounded"><X className="w-4 h-4"/></button></>) : (<><span className="flex-1 text-sm text-gray-700">{ind.teks}</span><button onClick={()=>setEditing(true)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>onDelete(pcId, ind.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></>)}
+    </div>
+  );
+}

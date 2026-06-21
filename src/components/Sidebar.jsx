@@ -1,0 +1,63 @@
+import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../lib/AuthContext';
+import {
+  LayoutDashboard, Building2, Users, BookOpen, Heart,
+  FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X
+} from 'lucide-react';
+
+const allMenus = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: null },
+  { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator'] },
+  { to: '/perencanaan', label: 'Perencanaan KBC', icon: FileText, roles: null },
+  { to: '/jurnal', label: 'Jurnal Harian Guru', icon: Edit3, roles: null },
+  { to: '/eviden', label: 'Eviden Digital', icon: Camera, roles: null },
+  { to: '/observasi', label: 'Observasi Siswa', icon: Eye, roles: null },
+  { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kepala_madrasah', 'pengawas', 'admin'] },
+  { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
+  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin'] },
+];
+
+export default function Sidebar({ open, onClose }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const filtered = allMenus.filter(m => {
+    if (!m.roles) return true;
+    return user && m.roles.includes(user.role);
+  });
+
+  const isActive = (path) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <>
+      {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#102a4d] text-white z-50 transform transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
+          <div>
+            <h1 className="font-bold text-lg">SiJurnal Cinta Guru</h1>
+            <p className="text-xs text-blue-200">Kurikulum Berbasis Cinta</p>
+          </div>
+          <button onClick={onClose} className="lg:hidden p-1 hover:bg-[#1e3a5f] rounded"><X className="w-5 h-5" /></button>
+        </div>
+        <nav className="p-3 space-y-1 overflow-y-auto">
+          {filtered.map(m => (
+            <NavLink key={m.to} to={m.to} onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive(m.to) ? 'bg-[#eecb59] text-[#102a4d]' : 'hover:bg-[#1e3a5f] text-blue-100'}`}
+            >
+              <m.icon className="w-5 h-5" />
+              {m.label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#1e3a5f] text-xs text-blue-200">
+          <p className="font-medium">{user?.nama}</p>
+          <p className="capitalize">{user?.role?.replace('_', ' ')}</p>
+        </div>
+      </aside>
+    </>
+  );
+}
