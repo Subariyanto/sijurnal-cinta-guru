@@ -18,6 +18,10 @@ if (!d.pengguna || d.pengguna.length === 0) {
   setData('eviden', seed.eviden);
   setData('observasiSiswa', seed.observasiSiswa);
   setData('validasi', seed.validasi);
+  setData('murid', seed.murid || []);
+  setData('instrumenKarakter', seed.instrumenKarakter || []);
+  setData('pembiasaanHarian', seed.pembiasaanHarian || []);
+  setData('observasiKarakter', seed.observasiKarakter || []);
   setData('pengaturan', { tahunPelajaran: '2026/2027', semester: 'Ganjil', namaAplikasi: 'SiJurnal Cinta Guru', logoKemenag: '', logoMadrasah: '' });
 }
 

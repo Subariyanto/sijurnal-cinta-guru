@@ -105,5 +105,113 @@ export function createSeedData() {
     { id: 'v2', jurnalId: 'j4', validatorNama: 'Subariyanto, S.Pd, M.Pd.I', validatorRole: 'Pengawas', validatorId: 'u5', tanggal: '2026-06-18', skor: { kesesuaianRencana: 17, pelaksanaanPancaCinta: 22, buktiEviden: 16, dampakSiswa: 13, refleksiGuru: 8, kelengkapan: 8 }, totalSkor: 84, kategori: 'Baik', catatanApresiasi: 'Inovasi eksperimen panel surya sangat baik', catatanPerbaikan: 'Perbanyak dokumentasi eviden', rekomendasi: 'Integrasikan dengan mata pelajaran lain', status: 'Disetujui' },
   ];
 
-  return { pengguna, madrasah, guru, kelas, pancaCinta, rencanaKBC, jurnalHarian, eviden, observasiSiswa, validasi };
+  // Murid
+  const murid = [
+    { id: 'm1', nama: 'Andi Pratama', nisn: '1234567890', kelasId: 'kls1', kelasNama: '5A', madrasahId: 'mad1', madrasahNama: 'MI Nurul Huda Sukowono' },
+    { id: 'm2', nama: 'Rina Sari', nisn: '1234567891', kelasId: 'kls2', kelasNama: '7B', madrasahId: 'mad2', madrasahNama: 'MTs Al-Ikhlas Kalisat' },
+    { id: 'm3', nama: 'Putri Lestari', nisn: '1234567892', kelasId: 'kls1', kelasNama: '5A', madrasahId: 'mad1', madrasahNama: 'MI Nurul Huda Sukowono' },
+    { id: 'm4', nama: 'Bagas Saputra', nisn: '1234567893', kelasId: 'kls3', kelasNama: 'X-IPA', madrasahId: 'mad3', madrasahNama: 'MA Darul Ulum Sukowono' },
+  ];
+
+  // Instrumen Karakter (default + dapat ditambah admin)
+  const instrumenKarakter = [
+    {
+      id: 'inst-cinta-allah',
+      judul: 'Implementasi Nilai Karakter Religius melalui Cinta Allah dan Rasul-Nya',
+      pancaCinta: 'Cinta Allah dan Rasul',
+      aspek: [
+        { id: 'A', kode: 'A', nama: 'Mensyukuri Nikmat dan Kebaikan Allah', indikator: [
+          { no: 1, teks: 'Mengucapkan hamdalah ketika memperoleh keberhasilan atau kebahagiaan.' },
+          { no: 2, teks: 'Mengucapkan terima kasih ketika menerima bantuan atau kebaikan.' },
+          { no: 3, teks: 'Menjaga kebersihan diri dan lingkungan sebagai bentuk rasa syukur kepada Allah.' },
+          { no: 4, teks: 'Menggunakan fasilitas madrasah dengan baik dan tidak merusaknya.' },
+          { no: 5, teks: 'Belajar dengan sungguh-sungguh sebagai bentuk rasa syukur kepada Allah.' },
+        ]},
+        { id: 'B', kode: 'B', nama: 'Meneladani Akhlak Rasulullah SAW', indikator: [
+          { no: 6, teks: 'Mengucapkan salam ketika bertemu guru dan teman.' },
+          { no: 7, teks: 'Berkata jujur kepada guru, orang tua, dan teman.' },
+          { no: 8, teks: 'Bersikap sopan kepada guru dan teman.' },
+          { no: 9, teks: 'Mau meminta maaf ketika melakukan kesalahan.' },
+          { no: 10, teks: 'Mau memaafkan kesalahan teman.' },
+          { no: 11, teks: 'Menepati janji dan melaksanakan tugas yang diberikan.' },
+        ]},
+        { id: 'C', kode: 'C', nama: 'Membiasakan Beribadah', indikator: [
+          { no: 12, teks: 'Berdoa sebelum dan sesudah belajar.' },
+          { no: 13, teks: 'Mengikuti salat berjamaah dengan tertib.' },
+          { no: 14, teks: 'Membaca Al-Qur’an sesuai kemampuan.' },
+          { no: 15, teks: 'Mengikuti kegiatan keagamaan dengan senang hati.' },
+          { no: 16, teks: 'Menjaga ketertiban saat beribadah.' },
+        ]},
+      ],
+    },
+  ];
+
+  // Pembiasaan Harian Guru sample
+  const pembiasaanHarian = [
+    {
+      id: 'pb1',
+      guruId: 'g1', guruNama: 'Siti Nurhalimah, S.Pd',
+      madrasahId: 'mad1', madrasahNama: 'MI Nurul Huda Sukowono',
+      kelasId: 'kls1', kelasNama: '5A',
+      bulan: 6, tahun: 2026, semester: 'Genap', tahunPelajaran: '2025/2026',
+      // checklist[tahapanId][kegiatanIdx][tanggal] = boolean
+      checklist: (() => {
+        const c = {};
+        const tahapanIds = ['persiapan','penyambutan','pembukaan','inti','istirahat','penutupan','kepulangan'];
+        const counts = [5,5,6,9,8,7,5];
+        tahapanIds.forEach((t, i) => {
+          c[t] = {};
+          for (let k = 0; k < counts[i]; k++) {
+            c[t][k] = {};
+            for (let d = 1; d <= 20; d++) c[t][k][d] = Math.random() > 0.2;
+          }
+        });
+        return c;
+      })(),
+      catatanHarian: { 5: 'Murid sangat antusias di morning circle', 12: 'Praktik adab makan berjalan baik' },
+      eviden: [],
+      refleksi: [
+        { tanggal: '2026-06-05', kejadian: 'Ada murid yang murung di pagi hari', refleksi: 'Perlu pendekatan personal', tindakLanjut: 'Cek emosi murid setiap pagi' },
+      ],
+      status: 'Disetujui',
+    },
+  ];
+
+  // Observasi Karakter Murid sample
+  const observasiKarakter = [
+    {
+      id: 'ok1',
+      muridId: 'm1', muridNama: 'Andi Pratama', nisn: '1234567890',
+      kelasId: 'kls1', kelasNama: '5A',
+      madrasahId: 'mad1', madrasahNama: 'MI Nurul Huda Sukowono', jenjang: 'MI',
+      guruId: 'g1', guruNama: 'Siti Nurhalimah, S.Pd',
+      instrumenId: 'inst-cinta-allah',
+      pancaCinta: 'Cinta Allah dan Rasul',
+      tanggal: '2026-06-18', bulan: 6, semester: 'Genap', tahunPelajaran: '2025/2026',
+      skor: { 1: 4, 2: 3, 3: 4, 4: 4, 5: 3, 6: 4, 7: 4, 8: 3, 9: 3, 10: 4, 11: 3, 12: 4, 13: 4, 14: 3, 15: 4, 16: 3 },
+      catatan: 'Andi konsisten mengucap hamdalah dan terima kasih. Sopan kepada guru dan teman.',
+      rekomendasiSiswa: '',
+      tindakLanjut: 'Pertahankan dan dorong jadi tutor sebaya untuk teman',
+      eviden: '',
+      status: 'Disetujui',
+    },
+    {
+      id: 'ok2',
+      muridId: 'm3', muridNama: 'Putri Lestari', nisn: '1234567892',
+      kelasId: 'kls1', kelasNama: '5A',
+      madrasahId: 'mad1', madrasahNama: 'MI Nurul Huda Sukowono', jenjang: 'MI',
+      guruId: 'g1', guruNama: 'Siti Nurhalimah, S.Pd',
+      instrumenId: 'inst-cinta-allah',
+      pancaCinta: 'Cinta Allah dan Rasul',
+      tanggal: '2026-06-18', bulan: 6, semester: 'Genap', tahunPelajaran: '2025/2026',
+      skor: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 2, 6: 3, 7: 3, 8: 3, 9: 2, 10: 3, 11: 2, 12: 3, 13: 2, 14: 2, 15: 3, 16: 2 },
+      catatan: 'Putri masih dalam tahap berkembang, perlu dorongan untuk salat berjamaah',
+      rekomendasiSiswa: '',
+      tindakLanjut: 'Pendampingan rutin saat dzuhur',
+      eviden: '',
+      status: 'Dikirim',
+    },
+  ];
+
+  return { pengguna, madrasah, guru, kelas, pancaCinta, rencanaKBC, jurnalHarian, eviden, observasiSiswa, validasi, murid, instrumenKarakter, pembiasaanHarian, observasiKarakter };
 }

@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import {
   LayoutDashboard, Building2, Users, BookOpen, Heart,
-  FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X, ClipboardCheck
+  FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X, ClipboardCheck,
+  CalendarCheck, Sparkles, Layers
 } from 'lucide-react';
 
 const allMenus = [
@@ -11,10 +12,13 @@ const allMenus = [
   { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator'] },
   { to: '/perencanaan', label: 'Perencanaan KBC', icon: FileText, roles: null },
   { to: '/jurnal', label: 'Jurnal Harian Guru', icon: Edit3, roles: null },
+  { to: '/pembiasaan-harian', label: 'Jurnal Pembiasaan Harian', icon: CalendarCheck, roles: null },
   { to: '/eviden', label: 'Eviden Digital', icon: Camera, roles: null },
   { to: '/observasi', label: 'Observasi Siswa', icon: Eye, roles: null },
+  { to: '/observasi-karakter', label: 'Observasi Karakter Murid', icon: Sparkles, roles: null },
   { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kepala_madrasah', 'pengawas', 'admin'] },
   { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
+  { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers, roles: null },
   { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin'] },
 ];
