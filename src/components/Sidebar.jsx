@@ -42,7 +42,7 @@ export default function Sidebar({ open, onClose }) {
       {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
       <aside className={`fixed top-0 left-0 h-full w-64 bg-[#102a4d] text-white z-50 transform transition-transform duration-200 overflow-y-auto ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
-          <div>
+          <div className="flex-1 text-center">
             <h1 className="font-bold text-base">e-Jurnal KBC Madrasah</h1>
             <p className="text-sm text-blue-200 tracking-tight">Kurikulum Berbasis Cinta</p>
           </div>
