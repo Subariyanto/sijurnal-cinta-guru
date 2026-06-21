@@ -51,7 +51,7 @@ export default function Sidebar({ open, onClose }) {
         <nav className="p-3 space-y-0.5">
           {filtered.map(m => (
             <NavLink key={m.to} to={m.to} onClick={onClose}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-medium transition whitespace-nowrap ${isActive(m.to) ? 'bg-[#eecb59] text-[#102a4d]' : 'hover:bg-[#1e3a5f] text-blue-100'}`}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-normal transition whitespace-nowrap ${isActive(m.to) ? 'bg-[#eecb59] text-[#102a4d]' : 'hover:bg-[#1e3a5f] text-blue-100'}`}
             >
               <m.icon className="w-4 h-4 flex-shrink-0" />
               <span>{m.label}</span>
