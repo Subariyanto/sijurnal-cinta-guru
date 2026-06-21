@@ -40,15 +40,15 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#102a4d] text-white z-50 transform transition-transform duration-200 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#102a4d] text-white z-50 transform transition-transform duration-200 flex flex-col ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f] flex-shrink-0">
           <div>
             <h1 className="font-bold text-lg">SiJurnal Cinta Guru</h1>
             <p className="text-xs text-blue-200">Kurikulum Berbasis Cinta</p>
           </div>
           <button onClick={onClose} className="lg:hidden p-1 hover:bg-[#1e3a5f] rounded"><X className="w-5 h-5" /></button>
         </div>
-        <nav className="p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
           {filtered.map(m => (
             <NavLink key={m.to} to={m.to} onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive(m.to) ? 'bg-[#eecb59] text-[#102a4d]' : 'hover:bg-[#1e3a5f] text-blue-100'}`}
@@ -58,7 +58,7 @@ export default function Sidebar({ open, onClose }) {
             </NavLink>
           ))}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#1e3a5f] text-xs text-blue-200">
+        <div className="flex-shrink-0 p-4 border-t border-[#1e3a5f] text-xs text-blue-200">
           <p className="font-medium">{user?.nama}</p>
           <p className="capitalize">{user?.role?.replace('_', ' ')}</p>
         </div>
