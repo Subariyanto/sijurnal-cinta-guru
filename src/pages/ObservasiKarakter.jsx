@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { getData, addItem, updateItem, deleteItem, generateId, formatDate, getKategoriKarakter, getRekomendasiKarakter, SKOR_KARAKTER_LABEL, BULAN_NAMA, NILAI_PANCA_CINTA } from '../lib/store';
 import { useAuth } from '../lib/AuthContext';
-import { Plus, Search, Edit, Trash2, Eye, Printer, Save, X, BookOpen, TrendingUp, Send, Users } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Printer, Save, X, BookOpen, TrendingUp, Send, Users, Wand2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 
 function showToast(msg, type) {
@@ -17,6 +17,55 @@ const KAT_COLORS = { 'Sudah Terbiasa': 'bg-green-100 text-green-700', 'Berkemban
 const KAT_BG = { 'Sudah Terbiasa': 'bg-green-50 border-green-400', 'Berkembang Baik': 'bg-blue-50 border-blue-400', 'Sedang Belajar': 'bg-yellow-50 border-yellow-400', 'Mulai Bertumbuh': 'bg-red-50 border-red-400' };
 const PIE_CLR = ['#2fa295', '#3b82f6', '#eecb59', '#ef4444'];
 const SKOR_BG = { 4: 'bg-green-100 border-green-400 text-green-700 ring-2 ring-green-300', 3: 'bg-blue-100 border-blue-400 text-blue-700 ring-2 ring-blue-300', 2: 'bg-yellow-100 border-yellow-400 text-yellow-700 ring-2 ring-yellow-300', 1: 'bg-red-100 border-red-400 text-red-700 ring-2 ring-red-300' };
+
+// Template otomatis catatan & rencana tindak lanjut berdasarkan kategori
+const TEMPLATE_CATATAN = {
+  'Sudah Terbiasa': [
+    'Murid menunjukkan pembiasaan karakter yang sangat baik dan konsisten dalam keseharian. Mampu menjadi teladan bagi teman sebaya.',
+    'Karakter Cinta Allah dan Rasul sudah membudaya dalam diri murid. Terlihat dari sikap dan perilaku sehari-hari yang santun dan religius.',
+    'Murid telah menginternalisasi nilai-nilai karakter dengan sangat baik, sering mengingatkan teman untuk berbuat baik.',
+  ],
+  'Berkembang Baik': [
+    'Murid menunjukkan perkembangan karakter yang baik. Sebagian besar indikator sudah dilakukan dengan kesadaran sendiri.',
+    'Pembiasaan karakter sudah terlihat konsisten meski masih perlu pengingat sesekali. Perlu pendampingan untuk meningkat ke tahap membudaya.',
+    'Murid mampu menerapkan nilai karakter Cinta Allah dan Rasul dalam aktivitas sehari-hari dengan baik.',
+  ],
+  'Sedang Belajar': [
+    'Murid sedang dalam proses belajar membiasakan karakter. Beberapa indikator sudah tampak namun masih perlu bimbingan rutin.',
+    'Pembiasaan karakter mulai terlihat tetapi belum konsisten. Memerlukan motivasi dan keteladanan dari guru/orang tua.',
+    'Murid menunjukkan upaya untuk berkembang. Perlu pendampingan intensif agar karakter tertanam lebih dalam.',
+  ],
+  'Mulai Bertumbuh': [
+    'Murid baru memulai pembiasaan karakter. Beberapa indikator masih jarang tampak. Perlu pendekatan khusus dan keteladanan yang intens.',
+    'Pembiasaan karakter belum terlihat secara konsisten. Memerlukan kerja sama erat antara guru, orang tua, dan lingkungan.',
+    'Murid memerlukan perhatian lebih untuk pembiasaan karakter. Disarankan komunikasi rutin dengan wali murid.',
+  ],
+};
+
+const TEMPLATE_TINDAK_LANJUT = {
+  'Sudah Terbiasa': [
+    '1. Berikan apresiasi dan penghargaan atas konsistensi murid.\n2. Libatkan murid sebagai role model dan motivator bagi teman sebaya.\n3. Tingkatkan tantangan dengan kegiatan kepemimpinan religius (memimpin doa, bercerita kisah Nabi, dsb).\n4. Pertahankan komunikasi positif dengan orang tua untuk menjaga konsistensi di rumah.',
+    '1. Beri tugas kepemimpinan kecil seperti menjadi imam shalat duha kelas atau pemandu doa.\n2. Dokumentasikan praktik baik murid sebagai inspirasi.\n3. Libatkan dalam program tutor sebaya.\n4. Apresiasi konsisten tetap diberikan agar tidak kendur.',
+  ],
+  'Berkembang Baik': [
+    '1. Berikan penguatan positif setiap kali murid menunjukkan perilaku baik.\n2. Latih konsistensi melalui pembiasaan harian terstruktur (jadwal shalat berjamaah, dzikir pagi, dsb).\n3. Pasangkan dengan murid yang sudah "Sudah Terbiasa" sebagai mitra belajar karakter.\n4. Komunikasikan progres ke orang tua minimal seminggu sekali.',
+    '1. Tingkatkan intensitas pembiasaan dari 3x menjadi 5x seminggu.\n2. Berikan jurnal harian karakter sederhana untuk diisi murid.\n3. Lakukan refleksi mingguan bersama murid tentang capaiannya.\n4. Kolaborasi dengan orang tua untuk konsistensi di rumah.',
+  ],
+  'Sedang Belajar': [
+    '1. Lakukan pendampingan personal minimal 2x seminggu.\n2. Berikan contoh konkret dan keteladanan langsung dari guru.\n3. Buat target indikator kecil yang realistis untuk dicapai murid.\n4. Berikan reward sederhana untuk setiap progres.\n5. Komunikasi intensif dengan orang tua untuk sinkronisasi pembiasaan di rumah.',
+    '1. Tetapkan 2-3 indikator prioritas untuk difokuskan terlebih dahulu.\n2. Gunakan pendekatan pembelajaran kontekstual dan storytelling Islami.\n3. Buat papan apresiasi karakter di kelas untuk visualisasi progres.\n4. Lakukan konseling ringan untuk memahami hambatan murid.\n5. Pertemuan dengan orang tua untuk strategi bersama.',
+  ],
+  'Mulai Bertumbuh': [
+    '1. Pendampingan intensif harian oleh guru kelas dan guru BK.\n2. Komunikasi rutin (mingguan) dengan orang tua/wali murid.\n3. Berikan kegiatan religius yang menarik dan tidak menggurui (cerita Nabi interaktif, video edukatif, dsb).\n4. Gunakan pendekatan personal dan empati untuk memahami kondisi murid.\n5. Buat kontrak perilaku sederhana dengan target mingguan.\n6. Libatkan teman sebaya yang sudah baik sebagai dukungan sosial.\n7. Evaluasi ulang setelah 1 bulan, jika belum berkembang konsultasikan dengan kepala madrasah/pengawas.',
+    '1. Lakukan home visit bersama wali kelas untuk memahami kondisi rumah.\n2. Susun rencana pembinaan individual (RPI) dengan target jelas.\n3. Pelibatan tokoh agama setempat untuk pembinaan tambahan.\n4. Berikan perhatian dan kasih sayang sebagai modal utama pendampingan.\n5. Dokumentasikan progres harian secara terperinci.\n6. Evaluasi bulanan dengan tim pembina karakter madrasah.',
+  ],
+};
+
+function generateAutoFill(kategori, type) {
+  const arr = (type === 'catatan' ? TEMPLATE_CATATAN : TEMPLATE_TINDAK_LANJUT)[kategori];
+  if (!arr || arr.length === 0) return '';
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function calcSkor(skor, instrumen) {
   let total = 0, max = 0;
@@ -693,8 +742,20 @@ export default function ObservasiKarakter() {
 
               {/* Additional Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Catatan</label><textarea value={form.catatan || ''} onChange={e => setForm({ ...form, catatan: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Rencana Tindak Lanjut</label><textarea value={form.tindakLanjut || ''} onChange={e => setForm({ ...form, tindakLanjut: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" /></div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">Catatan</label>
+                    <button type="button" disabled={!formCalc.kategori} onClick={() => setForm(f => ({ ...f, catatan: generateAutoFill(formCalc.kategori, 'catatan') }))} className="text-xs px-2 py-1 bg-[#2fa295]/10 text-[#2fa295] hover:bg-[#2fa295]/20 disabled:opacity-40 disabled:cursor-not-allowed rounded flex items-center gap-1 font-medium" title={formCalc.kategori ? 'Isi otomatis berdasarkan kategori' : 'Isi skor dulu agar kategori muncul'}><Wand2 className="w-3 h-3" />Auto-isi</button>
+                  </div>
+                  <textarea value={form.catatan || ''} onChange={e => setForm({ ...form, catatan: e.target.value })} rows={4} placeholder={formCalc.kategori ? 'Klik "Auto-isi" untuk template, atau ketik manual' : 'Isi penilaian dulu untuk auto-isi otomatis'} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">Rencana Tindak Lanjut</label>
+                    <button type="button" disabled={!formCalc.kategori} onClick={() => setForm(f => ({ ...f, tindakLanjut: generateAutoFill(formCalc.kategori, 'tindakLanjut') }))} className="text-xs px-2 py-1 bg-[#2fa295]/10 text-[#2fa295] hover:bg-[#2fa295]/20 disabled:opacity-40 disabled:cursor-not-allowed rounded flex items-center gap-1 font-medium" title={formCalc.kategori ? 'Isi otomatis berdasarkan kategori' : 'Isi skor dulu agar kategori muncul'}><Wand2 className="w-3 h-3" />Auto-isi</button>
+                  </div>
+                  <textarea value={form.tindakLanjut || ''} onChange={e => setForm({ ...form, tindakLanjut: e.target.value })} rows={4} placeholder={formCalc.kategori ? 'Klik "Auto-isi" untuk template, atau ketik manual' : 'Isi penilaian dulu untuk auto-isi otomatis'} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" />
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Eviden</label><input type="text" value={form.eviden || ''} onChange={e => setForm({ ...form, eviden: e.target.value })} placeholder="URL atau deskripsi eviden" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" /></div>
