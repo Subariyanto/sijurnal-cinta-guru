@@ -44,7 +44,7 @@ export default function Sidebar({ open, onClose }) {
         <div className="flex items-center justify-between p-4 border-b border-[#1e3a5f]">
           <div>
             <h1 className="font-bold text-base">e-Jurnal KBC Madrasah</h1>
-            <p className="text-[10px] text-blue-200">Kurikulum Berbasis Cinta</p>
+            <p className="text-sm text-blue-200 tracking-tight">Kurikulum Berbasis Cinta</p>
           </div>
           <button onClick={onClose} className="lg:hidden p-1 hover:bg-[#1e3a5f] rounded"><X className="w-5 h-5" /></button>
         </div>
