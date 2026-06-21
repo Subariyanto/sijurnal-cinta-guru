@@ -13,6 +13,7 @@ import Validasi from './pages/Validasi';
 import Laporan from './pages/Laporan';
 import Pengaturan from './pages/Pengaturan';
 import DetailJurnal from './pages/DetailJurnal';
+import LaporanPengawas from './pages/LaporanPengawas';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -37,6 +38,7 @@ function AppRoutes() {
         <Route path="laporan" element={<Laporan />} />
         <Route path="pengaturan" element={<ProtectedRoute roles={['admin']}><Pengaturan /></ProtectedRoute>} />
         <Route path="jurnal/:id" element={<DetailJurnal />} />
+        <Route path="laporan-pengawas" element={<ProtectedRoute roles={['pengawas', 'admin']}><LaporanPengawas /></ProtectedRoute>} />
       </Route>
     </Routes>
   );

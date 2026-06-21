@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import {
   LayoutDashboard, Building2, Users, BookOpen, Heart,
-  FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X
+  FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X, ClipboardCheck
 } from 'lucide-react';
 
 const allMenus = [
@@ -15,6 +15,7 @@ const allMenus = [
   { to: '/observasi', label: 'Observasi Siswa', icon: Eye, roles: null },
   { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kepala_madrasah', 'pengawas', 'admin'] },
   { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
+  { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin'] },
 ];
 
