@@ -17,7 +17,7 @@
  */
 
 // ====== KONFIGURASI ======
-const SHARED_TOKEN = 'GANTI_DENGAN_TOKEN_RAHASIA_PAK_YANTO_2026'; // ⚠️ Ganti ini!
+const SHARED_TOKEN = 'GANTI_DENGAN_TOKEN_RAHASIA_ANDA'; // ⚠️ Ganti dengan token rahasia (dipakai oleh app saat sync). Setelah edit, redeploy version baru.
 const SHEET_NAME_INDEX = 'INDEX_MADRASAH';
 const SHEET_NAME_RAW = 'DATA_RAW';
 

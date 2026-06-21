@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# clasp / apps script secrets
+apps-script/.clasp.json
+apps-script/.clasprc.json
+apps-script/.token.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
