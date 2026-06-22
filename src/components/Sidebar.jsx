@@ -9,7 +9,7 @@ import {
 
 const allMenus = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator'] },
+  { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator', 'pengawas'] },
   { to: '/perencanaan', label: 'Perencanaan KBC', icon: FileText, roles: null },
   { to: '/jurnal', label: 'Jurnal Harian Guru', icon: Edit3, roles: null },
   { to: '/pembiasaan-harian', label: 'Jurnal Pembiasaan Harian', icon: CalendarCheck, roles: null },

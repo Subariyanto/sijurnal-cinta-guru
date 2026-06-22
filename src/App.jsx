@@ -33,7 +33,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
-        <Route path="master-data" element={<ProtectedRoute roles={['admin', 'operator']}><MasterData /></ProtectedRoute>} />
+        <Route path="master-data" element={<ProtectedRoute roles={['admin', 'operator', 'pengawas']}><MasterData /></ProtectedRoute>} />
         <Route path="perencanaan" element={<PerencanaanKBC />} />
         <Route path="jurnal" element={<JurnalHarian />} />
         <Route path="eviden" element={<Eviden />} />
