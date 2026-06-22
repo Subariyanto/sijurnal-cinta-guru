@@ -17,6 +17,7 @@ import LaporanPengawas from './pages/LaporanPengawas';
 import PembiasaanHarian from './pages/PembiasaanHarian';
 import ObservasiKarakter from './pages/ObservasiKarakter';
 import RekapInstrumen from './pages/RekapInstrumen';
+import Panduan from './pages/Panduan';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />
         <Route path="observasi-karakter" element={<ObservasiKarakter />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
+        <Route path="panduan" element={<Panduan />} />
       </Route>
     </Routes>
   );

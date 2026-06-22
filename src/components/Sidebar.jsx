@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import {
   LayoutDashboard, Building2, Users, BookOpen, Heart,
   FileText, Edit3, Camera, Eye, CheckCircle, BarChart3, Settings, X, ClipboardCheck,
-  CalendarCheck, Sparkles, Layers
+  CalendarCheck, Sparkles, Layers, HelpCircle
 } from 'lucide-react';
 
 const allMenus = [
@@ -21,6 +21,7 @@ const allMenus = [
   { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers, roles: null },
   { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kepala_madrasah', 'operator', 'pengawas'] },
+  { to: '/panduan', label: 'Panduan Penggunaan', icon: HelpCircle, roles: null },
 ];
 
 export default function Sidebar({ open, onClose }) {
