@@ -4,6 +4,7 @@
 // Server mode pakai Google Apps Script endpoint yang sama dgn sync data.
 
 import { getData, setData, generateId } from './store';
+import { getSyncSettings } from './sync';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // tanpa I,O,0,1 biar mudah dibaca
 
@@ -22,9 +23,9 @@ export function generateKodeAktivasi() {
 // SERVER MODE detection
 // ============================================================
 function getServerCfg() {
-  const data = getData();
-  const sync = data.pengaturan?.sync || {};
-  // Mode server aktif kalau endpoint+token + flag kodeServer = true
+  // Pakai getSyncSettings supaya dapet DEFAULT_ENDPOINT + DEFAULT_TOKEN + kodeServer:true
+  // (penting untuk device baru / user pendaftar yang belum punya pengaturan.sync di localStorage)
+  const sync = getSyncSettings();
   const enabled = !!(sync.endpoint && sync.token && sync.kodeServer);
   return { enabled, endpoint: sync.endpoint, token: sync.token };
 }
