@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { getData, updateCollection, addItem, updateItem, deleteItem, generateId } from '../lib/store';
-import { Plus, Search, Edit, Trash2, X, Save, Building2, Users, BookOpen, Heart, GraduationCap } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Save, Building2, Users, BookOpen, Heart, GraduationCap, FileDown, Upload, FileText } from 'lucide-react';
 import { JENJANG, NILAI_PANCA_CINTA, ROLE_LIST } from '../lib/store';
+import { downloadCSV, downloadTemplate, parseCSV, readFileAsText } from '../lib/csv';
 
 function useDataRefresher() {
   const [_, setTick] = useState(0);
@@ -9,6 +10,25 @@ function useDataRefresher() {
 }
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
+
+// === Helper toolbar Template / Import / Export ===
+function TemplateImportExport({ onTemplate, onImport, onExport }) {
+  const fileRef = React.useRef(null);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button onClick={onTemplate} className="px-3 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-medium flex items-center gap-2" title="Download template CSV">
+        <FileText className="w-4 h-4"/>Template
+      </button>
+      <button onClick={()=>fileRef.current?.click()} className="px-3 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-sm font-medium flex items-center gap-2" title="Import CSV ke aplikasi">
+        <Upload className="w-4 h-4"/>Import
+        <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e=>{ const f = e.target.files?.[0]; if (f) onImport(f); e.target.value=''; }}/>
+      </button>
+      <button onClick={onExport} className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-medium flex items-center gap-2" title="Export semua data ke CSV">
+        <FileDown className="w-4 h-4"/>Export
+      </button>
+    </div>
+  );
+}
 
 export default function MasterData() {
   const [tab, setTab] = useState('madrasah');
@@ -67,10 +87,32 @@ function MadrasahTab({ refresh }) {
 
   const del = (id) => { if (!confirm('Hapus madrasah ini?')) return; deleteItem('madrasah', id); setList(getData().madrasah); refresh(); showToast('Madrasah dihapus','success'); };
 
+  const M_HEADERS = ['nama','nsmNpsn','jenjang','alamat','kepalaMadrasah','kecamatan','pengawas'];
+  const handleTemplate = () => downloadTemplate('template-madrasah.csv', M_HEADERS, [
+    { nama: 'MI Contoh', nsmNpsn: '111235090099', jenjang: 'MI', alamat: 'Jl. Contoh No.1', kepalaMadrasah: 'Drs. Nama Kepala', kecamatan: 'Sukowono', pengawas: 'Subariyanto, S.Pd, M.Pd.I' }
+  ]);
+  const handleExport = () => downloadCSV(`data-madrasah-${new Date().toISOString().slice(0,10)}.csv`, M_HEADERS, list);
+  const handleImport = async (file) => {
+    try {
+      const txt = await readFileAsText(file);
+      const { rows } = parseCSV(txt);
+      if (rows.length === 0) return showToast('CSV kosong','error');
+      let count = 0;
+      rows.forEach(r => {
+        if (!r.nama) return;
+        addItem('madrasah', { id: generateId(), nama:r.nama, nsmNpsn:r.nsmNpsn||'', jenjang:r.jenjang||'MI', alamat:r.alamat||'', kepalaMadrasah:r.kepalaMadrasah||'', kecamatan:r.kecamatan||'', pengawas:r.pengawas||'' });
+        count++;
+      });
+      setList(getData().madrasah); refresh();
+      showToast(`${count} madrasah berhasil diimport`,'success');
+    } catch (e) { showToast('Gagal import: ' + e.message,'error'); }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap items-center">
         <div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari madrasah..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
+        <TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} />
         <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NSM/NPSN</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Kecamatan</th><th className="py-3 px-4">Kepala</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(m => (<tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{m.nama}</td><td className="py-2.5 px-4 text-xs">{m.nsmNpsn}</td><td className="py-2.5 px-4 text-xs">{m.jenjang}</td><td className="py-2.5 px-4 text-xs">{m.kecamatan}</td><td className="py-2.5 px-4 text-xs text-gray-500">{m.kepalaMadrasah}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(m)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(m.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
@@ -115,9 +157,32 @@ function GuruTab({ refresh }) {
   };
   const del = (id) => { if (!confirm('Hapus guru ini?')) return; deleteItem('guru', id); setList(getData().guru); refresh(); showToast('Guru dihapus','success'); };
 
+  const G_HEADERS = ['nama','nip','jabatan','mapel','madrasahNama','noHP','email','userId'];
+  const handleTemplate = () => downloadTemplate('template-guru.csv', G_HEADERS, [
+    { nama: 'Nama Guru, S.Pd', nip: '198501012019011001', jabatan: 'Guru Kelas', mapel: 'Tematik', madrasahNama: 'MI Contoh', noHP: '0812xxxx', email: 'guru@contoh.id', userId: 'guru1' }
+  ]);
+  const handleExport = () => downloadCSV(`data-guru-${new Date().toISOString().slice(0,10)}.csv`, G_HEADERS, list);
+  const handleImport = async (file) => {
+    try {
+      const txt = await readFileAsText(file);
+      const { rows } = parseCSV(txt);
+      if (rows.length === 0) return showToast('CSV kosong','error');
+      const mList = getData().madrasah;
+      let count = 0;
+      rows.forEach(r => {
+        if (!r.nama) return;
+        const m = mList.find(x => x.nama.toLowerCase() === (r.madrasahNama||'').toLowerCase());
+        addItem('guru', { id: generateId(), nama:r.nama, nip:r.nip||'', jabatan:r.jabatan||'', mapel:r.mapel||'', madrasahId:m?.id||'', madrasahNama:m?.nama||r.madrasahNama||'', noHP:r.noHP||'', email:r.email||'', userId:r.userId||'' });
+        count++;
+      });
+      setList(getData().guru); refresh();
+      showToast(`${count} guru berhasil diimport`,'success');
+    } catch (e) { showToast('Gagal import: ' + e.message,'error'); }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari guru..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
+      <div className="flex gap-3 flex-wrap items-center"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari guru..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} /><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIP</th><th className="py-3 px-4">Mapel</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(g=>(<tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{g.nama}</td><td className="py-2.5 px-4 text-xs">{g.nip||'-'}</td><td className="py-2.5 px-4 text-xs">{g.mapel||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{g.madrasahNama||'-'}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(g)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(g.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
       {showModal && <GuruModal form={form} setForm={setForm} save={save} close={()=>setShowModal(false)} madrasahList={madrasahList} />}
     </div>
@@ -194,6 +259,41 @@ function MuridTab({ refresh }) {
   };
   const del = (id) => { if (!confirm('Hapus murid ini?')) return; deleteItem('murid', id); setList(getData().murid); refresh(); showToast('Murid dihapus','success'); };
 
+  const S_HEADERS = ['nama','nis','nisn','jenisKelamin','tempatLahir','tanggalLahir','madrasahNama','kelasNama','namaWali','noHP','alamat','tahunPelajaran'];
+  const handleTemplate = () => downloadTemplate('template-murid.csv', S_HEADERS, [
+    { nama: 'Ahmad Fauzi', nis: '12345', nisn: '9876543210', jenisKelamin: 'L', tempatLahir: 'Jember', tanggalLahir: '2014-03-15', madrasahNama: 'MI Contoh', kelasNama: '5A', namaWali: 'Bapak Fauzi', noHP: '0812xxxx', alamat: 'Jl. Contoh', tahunPelajaran: '2026/2027' }
+  ]);
+  const handleExport = () => downloadCSV(`data-murid-${new Date().toISOString().slice(0,10)}.csv`, S_HEADERS, filtered);
+  const handleImportFile = async (file) => {
+    try {
+      const txt = await readFileAsText(file);
+      const { rows } = parseCSV(txt);
+      if (rows.length === 0) return showToast('CSV kosong','error');
+      const mList = getData().madrasah;
+      const kList = getData().kelas;
+      let count = 0;
+      rows.forEach(r => {
+        if (!r.nama) return;
+        const m = mList.find(x => x.nama.toLowerCase() === (r.madrasahNama||'').toLowerCase());
+        const k = kList.find(x => x.nama.toLowerCase() === (r.kelasNama||'').toLowerCase() && (!m || x.madrasahId === m.id));
+        addItem('murid', {
+          id: generateId(),
+          nama: r.nama, nis: r.nis||'', nisn: r.nisn||'',
+          jenisKelamin: (r.jenisKelamin||'L').toUpperCase().startsWith('P') ? 'P' : 'L',
+          tempatLahir: r.tempatLahir||'', tanggalLahir: r.tanggalLahir||'',
+          madrasahId: m?.id||'', madrasahNama: m?.nama||r.madrasahNama||'',
+          kelasId: k?.id||'', kelasNama: k?.nama||r.kelasNama||'',
+          jenjang: k?.jenjang||m?.jenjang||'',
+          namaWali: r.namaWali||'', noHP: r.noHP||'', alamat: r.alamat||'',
+          tahunPelajaran: r.tahunPelajaran||'2026/2027'
+        });
+        count++;
+      });
+      setList(getData().murid); refresh();
+      showToast(`${count} murid berhasil diimport`,'success');
+    } catch (e) { showToast('Gagal import: ' + e.message,'error'); }
+  };
+
   const importBulk = () => {
     const lines = importText.split('\n').map(l=>l.trim()).filter(Boolean);
     if (lines.length === 0) return showToast('Tempel data minimal 1 baris','error');
@@ -227,6 +327,7 @@ function MuridTab({ refresh }) {
         <select value={filterMadrasah} onChange={e=>{setFilterMadrasah(e.target.value); setFilterKelas('');}} className="px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Semua Madrasah</option>{madrasahList.map(m=><option key={m.id} value={m.id}>{m.nama}</option>)}</select>
         <select value={filterKelas} onChange={e=>setFilterKelas(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Semua Kelas</option>{kelasList.filter(k=>!filterMadrasah||k.madrasahId===filterMadrasah).map(k=><option key={k.id} value={k.id}>{k.nama} ({k.jenjang})</option>)}</select>
         <button onClick={()=>setShowImport(true)} className="px-4 py-2 bg-[#2fa295] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#278f84]"><Plus className="w-4 h-4"/>Impor Bulk</button>
+        <TemplateImportExport onTemplate={handleTemplate} onImport={handleImportFile} onExport={handleExport} />
         <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah Murid</button>
       </div>
       <div className="text-xs text-gray-500">Total: <b>{filtered.length}</b> murid {filterKelas && `di kelas ini`}</div>
