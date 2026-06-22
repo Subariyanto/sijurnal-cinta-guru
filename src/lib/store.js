@@ -160,6 +160,7 @@ export function getData() {
     observasiKarakter: d.observasiKarakter || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
+    kodeAktivasi: d.kodeAktivasi || [],
   };
 }
 

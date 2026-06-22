@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { getData, addItem, generateId } from '../lib/store';
-import { LogIn, Eye, EyeOff, UserPlus, ShoppingCart, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { isKodeValid, consumeKodeAktivasi } from '../lib/aktivasi';
+import { LogIn, Eye, EyeOff, UserPlus, ShoppingCart, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 
 const WA_YANTO = '6282330647698'; // Subariyanto - Pokjawas Jember
-const WA_MESSAGE = encodeURIComponent(
+const WA_BUY_MESSAGE = encodeURIComponent(
   'Assalamualaikum Pak. Saya tertarik untuk membeli lisensi FULL e-Jurnal KBC Madrasah. Mohon informasinya.'
+);
+const WA_KODE_MESSAGE = encodeURIComponent(
+  'Assalamualaikum Pak. Saya ingin mendaftar di e-Jurnal KBC Madrasah dan butuh Kode Aktivasi. Mohon kirimkan kodenya.'
 );
 
 function Toast({ msg, type }) {
@@ -31,7 +35,7 @@ export default function Login() {
   const [regUsername, setRegUsername] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regPassword2, setRegPassword2] = useState('');
-  const [regRole, setRegRole] = useState('guru');
+  const [regKode, setRegKode] = useState('');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -49,42 +53,44 @@ export default function Login() {
     setError('');
     const nama = regNama.trim();
     const uname = regUsername.trim().toLowerCase();
-    if (!nama || !uname || !regPassword) {
-      setError('Nama, username, dan password wajib diisi');
-      return;
-    }
-    if (uname.length < 3) {
-      setError('Username minimal 3 karakter');
-      return;
-    }
-    if (regPassword.length < 6) {
-      setError('Password minimal 6 karakter');
-      return;
-    }
-    if (regPassword !== regPassword2) {
-      setError('Konfirmasi password tidak cocok');
-      return;
-    }
+    const kode = regKode.trim().toUpperCase();
+    if (!kode) { setError('Kode aktivasi wajib diisi. Hubungi admin untuk mendapatkannya.'); return; }
+    if (!nama || !uname || !regPassword) { setError('Nama, username, dan password wajib diisi'); return; }
+    if (uname.length < 3) { setError('Username minimal 3 karakter'); return; }
+    if (regPassword.length < 6) { setError('Password minimal 6 karakter'); return; }
+    if (regPassword !== regPassword2) { setError('Konfirmasi password tidak cocok'); return; }
+
+    // 1. Validasi kode aktivasi
+    const cek = isKodeValid(kode);
+    if (!cek.ok) { setError(cek.reason); return; }
+
+    // 2. Validasi username unik
     const data = getData();
     if (data.pengguna.some((p) => p.username.toLowerCase() === uname)) {
       setError('Username sudah dipakai. Silakan pilih yang lain.');
       return;
     }
+
+    // 3. Buat user dengan role dari kode aktivasi
     const newUser = {
       id: generateId(),
       username: uname,
       password: regPassword,
-      role: regRole,
+      role: cek.kode.role,
       nama,
       guruId: null,
       madrasahId: null,
+      kodeAktivasi: cek.kode.kode,
     };
     addItem('pengguna', newUser);
+
+    // 4. Tandai kode terpakai
+    consumeKodeAktivasi(kode, { userId: newUser.id, username: uname });
+
     showToast('Pendaftaran berhasil. Silakan login.', 'success');
-    // pre-fill login form
     setUsername(uname);
     setPassword('');
-    setRegNama(''); setRegUsername(''); setRegPassword(''); setRegPassword2(''); setRegRole('guru');
+    setRegNama(''); setRegUsername(''); setRegPassword(''); setRegPassword2(''); setRegKode('');
     setMode('login');
   };
 
@@ -145,7 +151,7 @@ export default function Login() {
                 </button>
               </div>
               <a
-                href={`https://wa.me/${WA_YANTO}?text=${WA_MESSAGE}`}
+                href={`https://wa.me/${WA_YANTO}?text=${WA_BUY_MESSAGE}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 bg-[#eecb59] text-[#102a4d] rounded-lg font-semibold hover:bg-[#e6bf3d] flex items-center justify-center gap-2 text-sm"
@@ -170,7 +176,38 @@ export default function Login() {
                 <UserPlus className="w-5 h-5" /> Daftar Akun Baru
               </h2>
             </div>
+
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg flex gap-2 leading-relaxed">
+              <KeyRound className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Pendaftaran wajib menggunakan <b>Kode Aktivasi</b> dari admin. Kode menentukan peran (role) akun Anda.{' '}
+                <a
+                  href={`https://wa.me/${WA_YANTO}?text=${WA_KODE_MESSAGE}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-semibold hover:text-amber-900"
+                >
+                  Minta kode di sini
+                </a>
+              </span>
+            </div>
+
             {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kode Aktivasi <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={regKode}
+                onChange={(e) => { setRegKode(e.target.value.toUpperCase()); setError(''); }}
+                className="w-full px-4 py-2.5 border-2 border-amber-300 bg-amber-50/40 rounded-lg text-sm font-mono tracking-wider focus:ring-2 focus:ring-[#eecb59] outline-none"
+                placeholder="KBC-XXXX-XXXX"
+                required
+                autoComplete="off"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
               <input
@@ -193,19 +230,6 @@ export default function Login() {
                 required
                 autoComplete="username"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Peran (Role)</label>
-              <select
-                value={regRole}
-                onChange={(e) => setRegRole(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none bg-white"
-              >
-                <option value="guru">Guru</option>
-                <option value="kepala_madrasah">Kepala Madrasah</option>
-                <option value="pengawas">Pengawas</option>
-                <option value="operator">Operator</option>
-              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>

@@ -3,7 +3,8 @@ import { getData, updateCollection, setData } from '../lib/store';
 import { createSeedData } from '../lib/seed';
 import { useAuth } from '../lib/AuthContext';
 import { getSyncSettings, saveSyncSettings, syncToServer, listMadrasahFromServer } from '../lib/sync';
-import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink } from 'lucide-react';
+import { getAllKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL } from '../lib/aktivasi';
+import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle } from 'lucide-react';
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
 
@@ -110,6 +111,51 @@ export default function Pengaturan() {
   };
 
   const stats = getData();
+  const isAdmin = user?.role === 'admin';
+
+  // === Kode Aktivasi state ===
+  const [kodeList, setKodeList] = useState(() => getAllKodeAktivasi());
+  const [kodeRole, setKodeRole] = useState('guru');
+  const [kodeDeskripsi, setKodeDeskripsi] = useState('');
+  const [kodeJumlah, setKodeJumlah] = useState(1);
+  const [kodeFilter, setKodeFilter] = useState('semua'); // semua | tersedia | terpakai
+
+  const refreshKode = () => setKodeList(getAllKodeAktivasi());
+
+  const handleGenerateKode = () => {
+    const n = Math.max(1, Math.min(50, parseInt(kodeJumlah, 10) || 1));
+    const created = createKodeAktivasi({ role: kodeRole, deskripsi: kodeDeskripsi.trim(), dibuatOleh: user?.nama || user?.username || '-', count: n });
+    refreshKode();
+    showToast(`${created.length} kode aktivasi berhasil dibuat`, 'success');
+    setKodeDeskripsi('');
+    setKodeJumlah(1);
+  };
+
+  const handleCopyKode = (kode) => {
+    navigator.clipboard?.writeText(kode);
+    showToast(`Kode ${kode} disalin`, 'success');
+  };
+
+  const handleShareKode = (item) => {
+    const teks = `Assalamualaikum.\n\nBerikut Kode Aktivasi e-Jurnal KBC Madrasah Bapak/Ibu:\n\nKode: ${item.kode}\nPeran: ${ROLE_LABEL(item.role)}\n\nCara daftar:\n1. Buka aplikasi\n2. Klik "Daftar di sini"\n3. Masukkan kode di atas, lengkapi data, lalu klik Daftar.\n\nKode hanya bisa digunakan satu kali.`;
+    const url = `https://wa.me/?text=${encodeURIComponent(teks)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDeleteKode = (item) => {
+    if (item.digunakan) { showToast('Kode yang sudah dipakai tidak bisa dihapus', 'error'); return; }
+    if (!confirm(`Hapus kode ${item.kode}?`)) return;
+    deleteKodeAktivasi(item.id);
+    refreshKode();
+    showToast('Kode dihapus', 'success');
+  };
+
+  const filteredKode = kodeList.filter(k => kodeFilter === 'semua' || (kodeFilter === 'tersedia' ? !k.digunakan : k.digunakan)).slice().reverse();
+  const stat = {
+    total: kodeList.length,
+    tersedia: kodeList.filter(k => !k.digunakan).length,
+    terpakai: kodeList.filter(k => k.digunakan).length,
+  };
 
   return (
     <div className="space-y-6" key={tick}>
@@ -195,6 +241,84 @@ export default function Pengaturan() {
           </div>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-1"><KeyRound className="w-5 h-5 text-[#eecb59]"/><h3 className="font-semibold text-gray-800">Kode Aktivasi Pendaftaran</h3></div>
+          <p className="text-xs text-gray-500 mb-4">Generate kode aktivasi single-use untuk user baru. User hanya bisa daftar bila punya kode ini, dan role akun akan otomatis sesuai pilihan saat generate.</p>
+
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-gray-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Total</p><p className="text-2xl font-bold text-gray-800">{stat.total}</p></div>
+            <div className="bg-emerald-50 rounded-lg p-3 text-center"><p className="text-xs text-emerald-700">Tersedia</p><p className="text-2xl font-bold text-emerald-700">{stat.tersedia}</p></div>
+            <div className="bg-amber-50 rounded-lg p-3 text-center"><p className="text-xs text-amber-700">Terpakai</p><p className="text-2xl font-bold text-amber-700">{stat.terpakai}</p></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Peran (Role)</label>
+              <select value={kodeRole} onChange={e=>setKodeRole(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#eecb59] outline-none">
+                <option value="guru">Guru</option>
+                <option value="kepala_madrasah">Kepala Madrasah</option>
+                <option value="pengawas">Pengawas</option>
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Deskripsi (opsional)</label>
+              <input value={kodeDeskripsi} onChange={e=>setKodeDeskripsi(e.target.value)} placeholder="contoh: Guru MI Nurul Huda Sukowono" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#eecb59] outline-none"/>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah</label>
+              <input type="number" min="1" max="50" value={kodeJumlah} onChange={e=>setKodeJumlah(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#eecb59] outline-none"/>
+            </div>
+          </div>
+          <button onClick={handleGenerateKode} className="px-4 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center gap-2 mb-4"><Plus className="w-4 h-4"/>Generate Kode Aktivasi</button>
+
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-medium text-gray-700">Filter:</span>
+            {['semua','tersedia','terpakai'].map(f => (
+              <button key={f} onClick={()=>setKodeFilter(f)} className={`px-3 py-1 rounded-full text-xs font-medium ${kodeFilter===f ? 'bg-[#102a4d] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>
+            ))}
+          </div>
+
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="text-left px-3 py-2 font-semibold">Kode</th>
+                  <th className="text-left px-3 py-2 font-semibold">Role</th>
+                  <th className="text-left px-3 py-2 font-semibold">Deskripsi</th>
+                  <th className="text-left px-3 py-2 font-semibold">Status</th>
+                  <th className="text-left px-3 py-2 font-semibold">Dibuat</th>
+                  <th className="text-right px-3 py-2 font-semibold">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredKode.length === 0 && (
+                  <tr><td colSpan="6" className="text-center py-6 text-gray-400 italic">Belum ada kode aktivasi.</td></tr>
+                )}
+                {filteredKode.map(k => (
+                  <tr key={k.id} className="border-t border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-3 py-2 font-mono font-semibold text-[#102a4d]">{k.kode}</td>
+                    <td className="px-3 py-2">{ROLE_LABEL(k.role)}</td>
+                    <td className="px-3 py-2 text-gray-600">{k.deskripsi || <span className="text-gray-400 italic">-</span>}</td>
+                    <td className="px-3 py-2">{k.digunakan ? (<span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Terpakai oleh {k.digunakanOlehUsername || k.digunakanOleh}</span>) : (<span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">Tersedia</span>)}</td>
+                    <td className="px-3 py-2 text-gray-500">{new Date(k.dibuatTanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={()=>handleCopyKode(k.kode)} title="Salin kode" className="p-1.5 text-gray-500 hover:text-[#102a4d] hover:bg-blue-50 rounded"><Copy className="w-3.5 h-3.5"/></button>
+                        {!k.digunakan && (<button onClick={()=>handleShareKode(k)} title="Bagikan via WhatsApp" className="p-1.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded"><MessageCircle className="w-3.5 h-3.5"/></button>)}
+                        {!k.digunakan && (<button onClick={()=>handleDeleteKode(k)} title="Hapus" className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button>)}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="bg-gradient-to-br from-[#102a4d] to-[#1a3a6b] text-white rounded-xl p-5">
         <div className="flex flex-wrap items-center gap-6">
