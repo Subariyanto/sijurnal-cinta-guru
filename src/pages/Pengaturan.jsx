@@ -265,6 +265,7 @@ export default function Pengaturan() {
         </div>
       </div>
 
+      {user?.role !== 'pengawas' && (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <div className="flex items-center gap-2 mb-1"><Cloud className="w-5 h-5 text-[#2fa295]"/><h3 className="font-semibold text-gray-800">Sync ke Server Pokjawas (Google Sheet)</h3></div>
         <p className="text-xs text-gray-500 mb-4">Kirim data madrasah ini ke endpoint Google Apps Script milik Pokjawas, sehingga pengawas bisa memantau perkembangan tanpa import file. Lihat <code className="bg-gray-100 px-1.5 py-0.5 rounded">PANDUAN-SYNC.md</code> untuk setup.</p>
@@ -309,6 +310,7 @@ export default function Pengaturan() {
           </div>
         )}
       </div>
+      )}
 
       {isAdmin && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
