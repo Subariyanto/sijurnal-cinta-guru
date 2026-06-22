@@ -3,16 +3,28 @@ import { getData, setData } from './store';
 
 const SETTINGS_KEY = 'pengaturan';
 
+// Default endpoint + token — di-bundle ke build supaya semua device (user yg daftar di HP/laptop
+// lain) otomatis pakai server tanpa setup manual. Admin tetap bisa override di Pengaturan.
+const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxVEtQwasvIfZLCgq1qz77H-ERIEt-RCq__mcDfNiSdghNM405K-UbqXr20nizEin8ziA/exec';
+const DEFAULT_TOKEN = 'pokjawas-jember-ripyplc3rgxznowd';
+
 export function getSyncSettings() {
   const data = getData();
-  return data.pengaturan?.sync || {
-    endpoint: '',
-    token: '',
-    madrasahId: '',
-    madrasahNama: '',
-    autoSync: false,
-    lastSyncAt: null,
-    lastSyncStatus: null,
+  const saved = data.pengaturan?.sync;
+  if (saved && saved.endpoint) {
+    // Backfill kodeServer:true bila admin lama belum punya flag (sebelum kita default-on)
+    return { ...saved, kodeServer: saved.kodeServer ?? true };
+  }
+  // Fallback ke default sehingga server mode aktif tanpa setup manual di device baru
+  return {
+    endpoint: DEFAULT_ENDPOINT,
+    token: DEFAULT_TOKEN,
+    madrasahId: saved?.madrasahId || '',
+    madrasahNama: saved?.madrasahNama || '',
+    autoSync: saved?.autoSync || false,
+    lastSyncAt: saved?.lastSyncAt || null,
+    lastSyncStatus: saved?.lastSyncStatus || null,
+    kodeServer: true,
   };
 }
 

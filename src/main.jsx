@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { createSeedData } from './lib/seed.js'
 import { getData, setData } from './lib/store.js'
-import { createKodeAktivasi, getAllKodeAktivasiLocal } from './lib/aktivasi.js'
+import { createKodeAktivasi, getAllKodeAktivasiLocal, isKodeServerMode } from './lib/aktivasi.js'
 
 const d = getData();
 if (!d.pengguna || d.pengguna.length === 0) {
@@ -26,9 +26,9 @@ if (!d.pengguna || d.pengguna.length === 0) {
   setData('pengaturan', { tahunPelajaran: '2026/2027', semester: 'Ganjil', namaAplikasi: 'SiJurnal Cinta Guru', logoKemenag: '', logoMadrasah: '' });
 }
 
-// Seed kode aktivasi demo (1 per role) bila belum ada — supaya Yanto bisa test
-// flow pendaftaran tanpa harus generate manual dulu. Hanya jalan saat mode local.
-if (getAllKodeAktivasiLocal().length === 0) {
+// Seed kode aktivasi demo (1 per role) bila belum ada di local — hanya saat MODE LOCAL.
+// Di mode server, kode datang dari Google Sheet, tidak perlu seed local.
+if (!isKodeServerMode() && getAllKodeAktivasiLocal().length === 0) {
   ['guru', 'kepala_madrasah', 'pengawas', 'operator', 'admin'].forEach((role) => {
     createKodeAktivasi({ role, deskripsi: `Kode demo untuk role ${role}`, dibuatOleh: 'system', count: 1 }).catch(() => {});
   });

@@ -3,8 +3,8 @@ import { getData, updateCollection, setData } from '../lib/store';
 import { createSeedData } from '../lib/seed';
 import { useAuth } from '../lib/AuthContext';
 import { getSyncSettings, saveSyncSettings, syncToServer, listMadrasahFromServer } from '../lib/sync';
-import { listKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL, isKodeServerMode } from '../lib/aktivasi';
-import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle, Server, HardDrive } from 'lucide-react';
+import { listKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL, isKodeServerMode, getAllKodeAktivasiLocal } from '../lib/aktivasi';
+import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle, Server, HardDrive, ArrowUpCircle } from 'lucide-react';
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
 
@@ -145,6 +145,30 @@ export default function Pengaturan() {
     saveSyncSettings(next);
     setKodeServer(isKodeServerMode());
     showToast(enabled ? 'Mode server kode aktivasi aktif' : 'Kembali ke mode local', 'success');
+  };
+
+  const handleMigrateLocalKeServer = async () => {
+    const localKode = getAllKodeAktivasiLocal();
+    if (localKode.length === 0) { showToast('Tidak ada kode local untuk dimigrasi', 'error'); return; }
+    if (!confirm(`Push ${localKode.length} kode dari local ke server? Kode yang sudah ada di server akan di-skip otomatis.`)) return;
+    setKodeLoading(true);
+    try {
+      const cfg = sync;
+      const res = await fetch(cfg.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'kode-create', token: cfg.token, items: localKode }),
+        redirect: 'follow',
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Gagal migrasi');
+      showToast(`${json.created} kode berhasil dimigrasi ke server (sisanya duplikat).`, 'success');
+      await refreshKode();
+    } catch (e) {
+      showToast('Gagal migrasi: ' + e.message, 'error');
+    } finally {
+      setKodeLoading(false);
+    }
   };
 
   const handleGenerateKode = async () => {
@@ -315,6 +339,11 @@ export default function Pengaturan() {
             <button onClick={refreshKode} disabled={kodeLoading} className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50">
               <RefreshCw className={`w-3.5 h-3.5 ${kodeLoading ? 'animate-spin' : ''}`}/>Refresh
             </button>
+            {sync.kodeServer && getAllKodeAktivasiLocal().length > 0 && (
+              <button onClick={handleMigrateLocalKeServer} disabled={kodeLoading} className="px-3 py-2 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center gap-2 disabled:opacity-50" title={`Push ${getAllKodeAktivasiLocal().length} kode dari local ke server`}>
+                <ArrowUpCircle className="w-3.5 h-3.5"/>Migrasi {getAllKodeAktivasiLocal().length} kode local → server
+              </button>
+            )}
             {!sync.endpoint && (
               <span className="text-[11px] text-amber-600">⚠️ Set endpoint sync di bawah dulu untuk pakai mode server.</span>
             )}
