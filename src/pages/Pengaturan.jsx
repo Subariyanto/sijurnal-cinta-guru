@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getData, updateCollection, setData } from '../lib/store';
 import { createSeedData } from '../lib/seed';
 import { useAuth } from '../lib/AuthContext';
 import { getSyncSettings, saveSyncSettings, syncToServer, listMadrasahFromServer } from '../lib/sync';
-import { getAllKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL } from '../lib/aktivasi';
-import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle } from 'lucide-react';
+import { listKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL, isKodeServerMode } from '../lib/aktivasi';
+import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle, Server, HardDrive } from 'lucide-react';
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
 
@@ -114,21 +114,58 @@ export default function Pengaturan() {
   const isAdmin = user?.role === 'admin';
 
   // === Kode Aktivasi state ===
-  const [kodeList, setKodeList] = useState(() => getAllKodeAktivasi());
+  const [kodeList, setKodeList] = useState([]);
   const [kodeRole, setKodeRole] = useState('guru');
   const [kodeDeskripsi, setKodeDeskripsi] = useState('');
   const [kodeJumlah, setKodeJumlah] = useState(1);
-  const [kodeFilter, setKodeFilter] = useState('semua'); // semua | tersedia | terpakai
+  const [kodeFilter, setKodeFilter] = useState('semua');
+  const [kodeLoading, setKodeLoading] = useState(false);
+  const [kodeServer, setKodeServer] = useState(isKodeServerMode());
 
-  const refreshKode = () => setKodeList(getAllKodeAktivasi());
+  const refreshKode = async () => {
+    setKodeLoading(true);
+    try {
+      const list = await listKodeAktivasi();
+      setKodeList(list);
+    } catch (e) {
+      showToast('Gagal load kode: ' + e.message, 'error');
+    } finally {
+      setKodeLoading(false);
+    }
+  };
 
-  const handleGenerateKode = () => {
+  useEffect(() => {
+    if (isAdmin) refreshKode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, kodeServer]);
+
+  const handleToggleKodeServer = (enabled) => {
+    const next = { ...sync, kodeServer: enabled };
+    setSync(next);
+    saveSyncSettings(next);
+    setKodeServer(isKodeServerMode());
+    showToast(enabled ? 'Mode server kode aktivasi aktif' : 'Kembali ke mode local', 'success');
+  };
+
+  const handleGenerateKode = async () => {
     const n = Math.max(1, Math.min(50, parseInt(kodeJumlah, 10) || 1));
-    const created = createKodeAktivasi({ role: kodeRole, deskripsi: kodeDeskripsi.trim(), dibuatOleh: user?.nama || user?.username || '-', count: n });
-    refreshKode();
-    showToast(`${created.length} kode aktivasi berhasil dibuat`, 'success');
-    setKodeDeskripsi('');
-    setKodeJumlah(1);
+    setKodeLoading(true);
+    try {
+      const created = await createKodeAktivasi({
+        role: kodeRole,
+        deskripsi: kodeDeskripsi.trim(),
+        dibuatOleh: user?.nama || user?.username || '-',
+        count: n,
+      });
+      showToast(`${created.length} kode aktivasi berhasil dibuat`, 'success');
+      setKodeDeskripsi('');
+      setKodeJumlah(1);
+      await refreshKode();
+    } catch (e) {
+      showToast('Gagal generate: ' + e.message, 'error');
+    } finally {
+      setKodeLoading(false);
+    }
   };
 
   const handleCopyKode = (kode) => {
@@ -142,12 +179,19 @@ export default function Pengaturan() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleDeleteKode = (item) => {
+  const handleDeleteKode = async (item) => {
     if (item.digunakan) { showToast('Kode yang sudah dipakai tidak bisa dihapus', 'error'); return; }
     if (!confirm(`Hapus kode ${item.kode}?`)) return;
-    deleteKodeAktivasi(item.id);
-    refreshKode();
-    showToast('Kode dihapus', 'success');
+    setKodeLoading(true);
+    try {
+      await deleteKodeAktivasi(item);
+      showToast('Kode dihapus', 'success');
+      await refreshKode();
+    } catch (e) {
+      showToast('Gagal hapus: ' + e.message, 'error');
+    } finally {
+      setKodeLoading(false);
+    }
   };
 
   const filteredKode = kodeList.filter(k => kodeFilter === 'semua' || (kodeFilter === 'tersedia' ? !k.digunakan : k.digunakan)).slice().reverse();
@@ -244,8 +288,37 @@ export default function Pengaturan() {
 
       {isAdmin && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center gap-2 mb-1"><KeyRound className="w-5 h-5 text-[#eecb59]"/><h3 className="font-semibold text-gray-800">Kode Aktivasi Pendaftaran</h3></div>
-          <p className="text-xs text-gray-500 mb-4">Generate kode aktivasi single-use untuk user baru. User hanya bisa daftar bila punya kode ini, dan role akun akan otomatis sesuai pilihan saat generate.</p>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-[#eecb59]"/><h3 className="font-semibold text-gray-800">Kode Aktivasi Pendaftaran</h3></div>
+            <div className="flex items-center gap-2 text-xs">
+              {kodeServer ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold"><Server className="w-3 h-3"/>Mode Server</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-semibold"><HardDrive className="w-3 h-3"/>Mode Local</span>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">{kodeServer
+            ? 'Kode tersimpan di server (Google Sheet via Apps Script). Bisa generate di laptop, dipakai user di HP/laptop lain.'
+            : 'Kode tersimpan di browser ini saja. Untuk multi-device, aktifkan mode server di bawah (butuh endpoint sync sudah di-set).'}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <button
+              onClick={() => handleToggleKodeServer(!sync.kodeServer)}
+              disabled={!sync.endpoint || !sync.token}
+              className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${sync.kodeServer ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} disabled:opacity-50`}
+              title={!sync.endpoint || !sync.token ? 'Set endpoint+token sync dulu di section Sync di bawah' : ''}
+            >
+              {sync.kodeServer ? <><Server className="w-3.5 h-3.5"/>Mode Server: ON</> : <><HardDrive className="w-3.5 h-3.5"/>Aktifkan Mode Server</>}
+            </button>
+            <button onClick={refreshKode} disabled={kodeLoading} className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50">
+              <RefreshCw className={`w-3.5 h-3.5 ${kodeLoading ? 'animate-spin' : ''}`}/>Refresh
+            </button>
+            {!sync.endpoint && (
+              <span className="text-[11px] text-amber-600">⚠️ Set endpoint sync di bawah dulu untuk pakai mode server.</span>
+            )}
+          </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-gray-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Total</p><p className="text-2xl font-bold text-gray-800">{stat.total}</p></div>
@@ -273,7 +346,7 @@ export default function Pengaturan() {
               <input type="number" min="1" max="50" value={kodeJumlah} onChange={e=>setKodeJumlah(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#eecb59] outline-none"/>
             </div>
           </div>
-          <button onClick={handleGenerateKode} className="px-4 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center gap-2 mb-4"><Plus className="w-4 h-4"/>Generate Kode Aktivasi</button>
+          <button onClick={handleGenerateKode} disabled={kodeLoading} className="px-4 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center gap-2 mb-4 disabled:opacity-60">{kodeLoading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}Generate Kode Aktivasi</button>
 
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-medium text-gray-700">Filter:</span>
@@ -295,16 +368,19 @@ export default function Pengaturan() {
                 </tr>
               </thead>
               <tbody>
-                {filteredKode.length === 0 && (
+                {kodeLoading && (
+                  <tr><td colSpan="6" className="text-center py-6 text-gray-400 italic">Memuat...</td></tr>
+                )}
+                {!kodeLoading && filteredKode.length === 0 && (
                   <tr><td colSpan="6" className="text-center py-6 text-gray-400 italic">Belum ada kode aktivasi.</td></tr>
                 )}
-                {filteredKode.map(k => (
-                  <tr key={k.id} className="border-t border-gray-100 hover:bg-gray-50/50">
+                {!kodeLoading && filteredKode.map(k => (
+                  <tr key={k.id || k.kode} className="border-t border-gray-100 hover:bg-gray-50/50">
                     <td className="px-3 py-2 font-mono font-semibold text-[#102a4d]">{k.kode}</td>
                     <td className="px-3 py-2">{ROLE_LABEL(k.role)}</td>
                     <td className="px-3 py-2 text-gray-600">{k.deskripsi || <span className="text-gray-400 italic">-</span>}</td>
                     <td className="px-3 py-2">{k.digunakan ? (<span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Terpakai oleh {k.digunakanOlehUsername || k.digunakanOleh}</span>) : (<span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">Tersedia</span>)}</td>
-                    <td className="px-3 py-2 text-gray-500">{new Date(k.dibuatTanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</td>
+                    <td className="px-3 py-2 text-gray-500">{k.dibuatTanggal ? new Date(k.dibuatTanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-'}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
                         <button onClick={()=>handleCopyKode(k.kode)} title="Salin kode" className="p-1.5 text-gray-500 hover:text-[#102a4d] hover:bg-blue-50 rounded"><Copy className="w-3.5 h-3.5"/></button>

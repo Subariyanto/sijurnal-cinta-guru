@@ -28,6 +28,9 @@ const COLLECTIONS = [
   'eviden', 'validasi', 'perencanaan'
 ];
 
+const SHEET_NAME_KODE = 'KODE_AKTIVASI';
+const KODE_HEADERS = ['id', 'kode', 'role', 'deskripsi', 'dibuatOleh', 'dibuatTanggal', 'digunakan', 'digunakanOleh', 'digunakanOlehUsername', 'digunakanTanggal'];
+
 // ====== HANDLER ======
 function doPost(e) {
   try {
@@ -42,6 +45,11 @@ function doPost(e) {
     if (action === 'sync') return _handleSync(body);
     if (action === 'fetch') return _handleFetch(body);
     if (action === 'list') return _handleList();
+    if (action === 'kode-list') return _kodeList();
+    if (action === 'kode-create') return _kodeCreate(body);
+    if (action === 'kode-claim') return _kodeClaim(body);
+    if (action === 'kode-delete') return _kodeDelete(body);
+    if (action === 'kode-validate') return _kodeValidate(body);
 
     return _json({ ok: false, error: 'Action tidak dikenal: ' + action });
   } catch (err) {
@@ -59,6 +67,8 @@ function doGet(e) {
     return _handleFetch({ madrasahId: params.madrasahId, all: params.all === '1' });
   }
   if (params.action === 'list') return _handleList();
+  if (params.action === 'kode-list') return _kodeList();
+  if (params.action === 'kode-validate') return _kodeValidate({ kode: params.kode });
   return _json({ ok: true, message: 'SiJurnal Cinta Guru Sync Endpoint aktif' });
 }
 
@@ -216,4 +226,119 @@ function setup() {
 function getSpreadsheetUrl() {
   const ss = _getSpreadsheet();
   return ss.getUrl();
+}
+
+// ====== KODE AKTIVASI (multi-device) ======
+function _kodeSheet() {
+  const ss = _getSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME_KODE);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME_KODE);
+    sh.appendRow(KODE_HEADERS);
+    sh.getRange(1, 1, 1, KODE_HEADERS.length).setBackground('#eecb59').setFontColor('#102a4d').setFontWeight('bold');
+  }
+  return sh;
+}
+
+function _kodeRows() {
+  const sh = _kodeSheet();
+  const rng = sh.getDataRange().getValues();
+  if (rng.length < 2) return [];
+  const headers = rng[0];
+  return rng.slice(1).map((r, idx) => {
+    const o = { _row: idx + 2 };
+    headers.forEach((h, i) => { o[h] = r[i]; });
+    return o;
+  });
+}
+
+function _kodeList() {
+  const items = _kodeRows().map(o => {
+    delete o._row;
+    o.digunakan = o.digunakan === true || o.digunakan === 'TRUE' || o.digunakan === 'true' || o.digunakan === 1;
+    return o;
+  });
+  return _json({ ok: true, kode: items });
+}
+
+function _kodeCreate(body) {
+  const items = Array.isArray(body.items) ? body.items : (body.item ? [body.item] : []);
+  if (items.length === 0) return _json({ ok: false, error: 'items kosong' });
+  const sh = _kodeSheet();
+  const existing = new Set(_kodeRows().map(r => String(r.kode).trim().toUpperCase()));
+  const rows = [];
+  const created = [];
+  items.forEach(it => {
+    const k = String(it.kode || '').trim().toUpperCase();
+    if (!k) return;
+    if (existing.has(k)) return; // skip duplicate
+    existing.add(k);
+    const row = KODE_HEADERS.map(h => {
+      if (h === 'kode') return k;
+      if (h === 'digunakan') return it.digunakan ? true : false;
+      const v = it[h];
+      if (v === null || v === undefined) return '';
+      return v;
+    });
+    rows.push(row);
+    created.push(it);
+  });
+  if (rows.length > 0) {
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, KODE_HEADERS.length).setValues(rows);
+  }
+  return _json({ ok: true, created: created.length });
+}
+
+function _kodeValidate(body) {
+  const k = String(body.kode || '').trim().toUpperCase();
+  if (!k) return _json({ ok: false, reason: 'Kode wajib diisi' });
+  const found = _kodeRows().find(r => String(r.kode).trim().toUpperCase() === k);
+  if (!found) return _json({ ok: false, reason: 'Kode aktivasi tidak ditemukan' });
+  const used = found.digunakan === true || found.digunakan === 'TRUE' || found.digunakan === 'true' || found.digunakan === 1;
+  if (used) return _json({ ok: false, reason: 'Kode aktivasi sudah pernah digunakan' });
+  return _json({ ok: true, kode: { kode: found.kode, role: found.role, deskripsi: found.deskripsi } });
+}
+
+function _kodeClaim(body) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(8000)) return _json({ ok: false, reason: 'Server sibuk, coba lagi' });
+  try {
+    const k = String(body.kode || '').trim().toUpperCase();
+    if (!k) return _json({ ok: false, reason: 'Kode wajib diisi' });
+    const sh = _kodeSheet();
+    const rows = _kodeRows();
+    const found = rows.find(r => String(r.kode).trim().toUpperCase() === k);
+    if (!found) return _json({ ok: false, reason: 'Kode aktivasi tidak ditemukan' });
+    const used = found.digunakan === true || found.digunakan === 'TRUE' || found.digunakan === 'true' || found.digunakan === 1;
+    if (used) return _json({ ok: false, reason: 'Kode aktivasi sudah pernah digunakan' });
+    const userId = body.userId || '';
+    const username = body.username || '';
+    const ts = Date.now();
+    const colDigunakan = KODE_HEADERS.indexOf('digunakan') + 1;
+    const colOleh = KODE_HEADERS.indexOf('digunakanOleh') + 1;
+    const colUsername = KODE_HEADERS.indexOf('digunakanOlehUsername') + 1;
+    const colTanggal = KODE_HEADERS.indexOf('digunakanTanggal') + 1;
+    sh.getRange(found._row, colDigunakan).setValue(true);
+    sh.getRange(found._row, colOleh).setValue(userId);
+    sh.getRange(found._row, colUsername).setValue(username);
+    sh.getRange(found._row, colTanggal).setValue(ts);
+    return _json({ ok: true, kode: { kode: found.kode, role: found.role, deskripsi: found.deskripsi } });
+  } catch (err) {
+    return _json({ ok: false, reason: 'Gagal claim: ' + err });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _kodeDelete(body) {
+  const id = String(body.id || '').trim();
+  if (!id) return _json({ ok: false, error: 'id wajib diisi' });
+  const sh = _kodeSheet();
+  const rows = _kodeRows();
+  const found = rows.find(r => String(r.id) === id);
+  if (!found) return _json({ ok: false, error: 'Tidak ditemukan' });
+  const used = found.digunakan === true || found.digunakan === 'TRUE' || found.digunakan === 'true' || found.digunakan === 1;
+  if (used) return _json({ ok: false, error: 'Kode yang sudah dipakai tidak bisa dihapus' });
+  sh.deleteRow(found._row);
+  return _json({ ok: true });
 }

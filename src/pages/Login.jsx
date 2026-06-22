@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { getData, addItem, generateId } from '../lib/store';
-import { isKodeValid, consumeKodeAktivasi } from '../lib/aktivasi';
+import { isKodeValid, consumeKodeAktivasi, isKodeServerMode } from '../lib/aktivasi';
 import { LogIn, Eye, EyeOff, UserPlus, ShoppingCart, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 
 const WA_YANTO = '6282330647698'; // Subariyanto - Pokjawas Jember
@@ -36,6 +36,7 @@ export default function Login() {
   const [regPassword, setRegPassword] = useState('');
   const [regPassword2, setRegPassword2] = useState('');
   const [regKode, setRegKode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -48,7 +49,7 @@ export default function Login() {
     if (!u) setError('Username atau password salah');
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     const nama = regNama.trim();
@@ -60,38 +61,47 @@ export default function Login() {
     if (regPassword.length < 6) { setError('Password minimal 6 karakter'); return; }
     if (regPassword !== regPassword2) { setError('Konfirmasi password tidak cocok'); return; }
 
-    // 1. Validasi kode aktivasi
-    const cek = isKodeValid(kode);
-    if (!cek.ok) { setError(cek.reason); return; }
+    setSubmitting(true);
+    try {
+      // 1. Validasi kode aktivasi (server atau local)
+      const cek = await isKodeValid(kode);
+      if (!cek.ok) { setError(cek.reason); return; }
 
-    // 2. Validasi username unik
-    const data = getData();
-    if (data.pengguna.some((p) => p.username.toLowerCase() === uname)) {
-      setError('Username sudah dipakai. Silakan pilih yang lain.');
-      return;
+      // 2. Validasi username unik (local)
+      const data = getData();
+      if (data.pengguna.some((p) => p.username.toLowerCase() === uname)) {
+        setError('Username sudah dipakai. Silakan pilih yang lain.');
+        return;
+      }
+
+      // 3. Buat user dengan role dari kode aktivasi (local)
+      const newUser = {
+        id: generateId(),
+        username: uname,
+        password: regPassword,
+        role: cek.kode.role,
+        nama,
+        guruId: null,
+        madrasahId: null,
+        kodeAktivasi: cek.kode.kode,
+      };
+
+      // 4. Claim kode (atomic di server, instant di local)
+      const claim = await consumeKodeAktivasi(kode, { userId: newUser.id, username: uname });
+      if (!claim.ok) { setError(claim.reason || 'Gagal pakai kode'); return; }
+
+      addItem('pengguna', newUser);
+
+      showToast('Pendaftaran berhasil. Silakan login.', 'success');
+      setUsername(uname);
+      setPassword('');
+      setRegNama(''); setRegUsername(''); setRegPassword(''); setRegPassword2(''); setRegKode('');
+      setMode('login');
+    } catch (err) {
+      setError('Terjadi kesalahan: ' + (err.message || err));
+    } finally {
+      setSubmitting(false);
     }
-
-    // 3. Buat user dengan role dari kode aktivasi
-    const newUser = {
-      id: generateId(),
-      username: uname,
-      password: regPassword,
-      role: cek.kode.role,
-      nama,
-      guruId: null,
-      madrasahId: null,
-      kodeAktivasi: cek.kode.kode,
-    };
-    addItem('pengguna', newUser);
-
-    // 4. Tandai kode terpakai
-    consumeKodeAktivasi(kode, { userId: newUser.id, username: uname });
-
-    showToast('Pendaftaran berhasil. Silakan login.', 'success');
-    setUsername(uname);
-    setPassword('');
-    setRegNama(''); setRegUsername(''); setRegPassword(''); setRegPassword2(''); setRegKode('');
-    setMode('login');
   };
 
   return (
@@ -189,6 +199,9 @@ export default function Login() {
                 >
                   Minta kode di sini
                 </a>
+                {isKodeServerMode() && (
+                  <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-semibold">✓ Server</span>
+                )}
               </span>
             </div>
 
@@ -255,8 +268,8 @@ export default function Login() {
                 autoComplete="new-password"
               />
             </div>
-            <button type="submit" className="w-full py-3 bg-[#102a4d] text-white rounded-lg font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2">
-              <UserPlus className="w-4 h-4" /> Daftar
+            <button type="submit" disabled={submitting} className="w-full py-3 bg-[#102a4d] text-white rounded-lg font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2 disabled:opacity-60">
+              <UserPlus className="w-4 h-4" /> {submitting ? 'Mendaftar...' : 'Daftar'}
             </button>
             <div className="bg-blue-50 text-blue-700 text-[11px] p-3 rounded-lg flex gap-2 leading-relaxed">
               <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
