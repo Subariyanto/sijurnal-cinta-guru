@@ -40,7 +40,11 @@ export default function Navbar() {
           </div>
           <div className="leading-tight">
             <h1 className="font-bold text-sm sm:text-base">e-Jurnal Refleksi Harian Guru</h1>
-            <p className="text-[11px] sm:text-xs text-blue-200">Berbasis Panca Cinta</p>
+            <p className="flex items-center gap-2 text-[11px] sm:text-xs text-blue-200">
+              <span>Berbasis Panca Cinta</span>
+              <span className="w-8 border-t border-blue-200" aria-hidden="true" />
+              <span>Guru</span>
+            </p>
           </div>
           <div className="ml-auto hidden md:flex items-center gap-3">
             <div className="text-right leading-tight">
