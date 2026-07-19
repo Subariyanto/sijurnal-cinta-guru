@@ -160,6 +160,7 @@ export function getData() {
     jurnalRefleksiMapel: d.jurnalRefleksiMapel || [],
     observasiKarakter: d.observasiKarakter || [],
     cekTumbuhCintaAllah: d.cekTumbuhCintaAllah || [],
+    cekTumbuhCintaIlmu: d.cekTumbuhCintaIlmu || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],
