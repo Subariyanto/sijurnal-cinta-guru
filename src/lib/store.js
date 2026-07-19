@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // SiJurnal Cinta Guru - LocalStorage Data Layer
 // ============================================================
 const APP_KEY = 'sijurnal_cinta_guru_v1';
@@ -83,7 +83,7 @@ export const INSTRUMEN_KARAKTER_DEFAULT = {
     { id: 'C', kode: 'C', nama: 'Membiasakan Beribadah', indikator: [
       { no: 12, teks: 'Berdoa sebelum dan sesudah belajar.' },
       { no: 13, teks: 'Mengikuti salat berjamaah dengan tertib.' },
-      { no: 14, teks: 'Membaca Al-Qur’an sesuai kemampuan.' },
+      { no: 14, teks: 'Membaca Al-Qurâ€™an sesuai kemampuan.' },
       { no: 15, teks: 'Mengikuti kegiatan keagamaan dengan senang hati.' },
       { no: 16, teks: 'Menjaga ketertiban saat beribadah.' },
     ]},
@@ -162,6 +162,7 @@ export function getData() {
     cekTumbuhCintaAllah: d.cekTumbuhCintaAllah || [],
     cekTumbuhCintaIlmu: d.cekTumbuhCintaIlmu || [],
     cekTumbuhCintaLingkungan: d.cekTumbuhCintaLingkungan || [],
+    cekTumbuhCintaDiri: d.cekTumbuhCintaDiri || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],
@@ -200,4 +201,6 @@ export function updateCollection(key, arr) {
   d[key] = arr;
   saveAll(d);
 }
+
+
 

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import Layout from './components/Layout';
@@ -22,6 +22,7 @@ import JurnalRefleksiMapel from './pages/JurnalRefleksiMapel';
 import CekTumbuhCintaAllah from './pages/CekTumbuhCintaAllah';
 import CekTumbuhCintaIlmu from './pages/CekTumbuhCintaIlmu';
 import CekTumbuhCintaLingkungan from './pages/CekTumbuhCintaLingkungan';
+import CekTumbuhCintaDiri from './pages/CekTumbuhCintaDiri';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="cek-tumbuh-cinta-allah" element={<CekTumbuhCintaAllah />} />
         <Route path="cek-tumbuh-cinta-ilmu" element={<CekTumbuhCintaIlmu />} />
         <Route path="cek-tumbuh-cinta-lingkungan" element={<CekTumbuhCintaLingkungan />} />
+        <Route path="cek-tumbuh-cinta-diri" element={<CekTumbuhCintaDiri />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
         <Route path="panduan" element={<Panduan />} />
       </Route>
@@ -69,6 +71,8 @@ export default function App() {
     </HashRouter>
   );
 }
+
+
 
 
 
