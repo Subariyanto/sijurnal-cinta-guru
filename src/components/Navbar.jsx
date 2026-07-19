@@ -73,6 +73,7 @@ export default function Navbar() {
             <p className="flex items-center gap-2 text-[11px] sm:text-xs text-blue-200">
               <span>Berbasis Panca Cinta</span><span className="flex-1 border-t border-blue-200" />
             </p>
+            <p className="text-[9px] sm:text-[10px] text-blue-300 mt-0.5">Aplikasi ini dibuat oleh : Subariyanto, S.Pd, M.Pd.I.</p>
           </div>
           <div className="ml-auto hidden md:flex items-center gap-3">
             <div className="text-right leading-tight"><p className="text-sm font-medium">{user?.nama}</p><p className="text-[11px] text-blue-200 capitalize">{user?.role?.replace('_', ' ')}</p></div>
