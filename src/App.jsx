@@ -19,6 +19,7 @@ import ObservasiKarakter from './pages/ObservasiKarakter';
 import RekapInstrumen from './pages/RekapInstrumen';
 import Panduan from './pages/Panduan';
 import JurnalRefleksiMapel from './pages/JurnalRefleksiMapel';
+import CekTumbuhCintaAllah from './pages/CekTumbuhCintaAllah';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />
         <Route path="jurnal-refleksi-mapel" element={<JurnalRefleksiMapel />} />
         <Route path="observasi-karakter" element={<ObservasiKarakter />} />
+        <Route path="cek-tumbuh-cinta-allah" element={<CekTumbuhCintaAllah />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
         <Route path="panduan" element={<Panduan />} />
       </Route>

@@ -159,6 +159,7 @@ export function getData() {
     pembiasaanHarian: d.pembiasaanHarian || [],
     jurnalRefleksiMapel: d.jurnalRefleksiMapel || [],
     observasiKarakter: d.observasiKarakter || [],
+    cekTumbuhCintaAllah: d.cekTumbuhCintaAllah || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],
