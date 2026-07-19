@@ -164,6 +164,7 @@ export function getData() {
     cekTumbuhCintaLingkungan: d.cekTumbuhCintaLingkungan || [],
     cekTumbuhCintaDiri: d.cekTumbuhCintaDiri || [],
     cekTumbuhCintaSesama: d.cekTumbuhCintaSesama || [],
+    cekTumbuhCintaTanahAir: d.cekTumbuhCintaTanahAir || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],
