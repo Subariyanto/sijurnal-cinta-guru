@@ -12,24 +12,13 @@ const ASPEK = [
   [9,'Menjaga kebersihan tubuh dan pakaian'],[10,'Memilih makanan dan minuman yang sehat'],[11,'Beristirahat dan beraktivitas secara seimbang'],[12,'Menghindari tindakan atau tempat yang membahayakan diri']]}
 ];const LABEL={4:'Mengakar',3:'Berkembang Baik',2:'Mulai Bertumbuh',1:'Belum Tumbuh'};
 const REK={
- 'Mengakar':'Pertahankan kemampuan mengenali dan mengelola emosi, kemandirian, serta kebiasaan menjaga kesehatan dan keselamatan diri. Jadilah teladan dalam menghargai dan merawat diri.',
- 'Berkembang Baik':'Terus latih pengelolaan emosi, tanggung jawab pribadi, dan kebiasaan hidup sehat agar semakin konsisten di madrasah maupun di rumah.',
- 'Mulai Bertumbuh':'Perkuat kebiasaan mengenali perasaan, menyelesaikan tanggung jawab, menjaga kebersihan, memilih makanan sehat, dan menghindari hal yang membahayakan diri.',
- 'Belum Tumbuh':'Mulailah dari langkah sederhana dengan pendampingan: ceritakan perasaan, rapikan barang sendiri, jaga kebersihan tubuh, dan minta bantuan saat merasa tidak aman.'
+ 'Mengakar':'Teruslah kembangkan potensi terbaik yang kamu miliki. Jadikan pengalaman dan tantangan sebagai kesempatan untuk tumbuh menjadi pribadi yang lebih baik, selalu menjadi teladan, mentor sebaya, serta aktif dalam kegiatan yang mendorong pengembangan potensi dan kepemimpinan diri.',
+ 'Berkembang Baik':'Telah tampak kemampuan mengenali dan mengembangkan dirimu dengan baik. Teruslah melatih tanggung jawab, pengendalian emosi, dan kepercayaan diri agar semakin matang, melalui pembiasaan refleksi diri, pengembangan keterampilan sosial-emosional, serta memotivasi diri untuk terus meningkatkan potensi secara berkelanjutan.',
+ 'Mulai Bertumbuh':'Mulailah membiasakan diri berani menerima masukan, belajar dari kesalahan, dan tetap semangat ketika menghadapi kesulitan agar kemampuan dirimu terus berkembang dengan cara meningkatkan tanggung jawab pribadi serta mengembangkan kepercayaan diri dan potensi yang dimiliki.',
+ 'Belum Tumbuh':'Mulailah mengenali kelebihan yang dimiliki dan biasakan melakukan hal-hal positif setiap hari. Percayalah bahwa setiap orang memiliki kesempatan untuk menjadi lebih baik, kuatkan motivasi, biasakan berperilaku positif, serta senang berkolaborasi dengan teman dan lingkungan.'
 };const kategori=n=>n>=86?'Mengakar':n>=71?'Berkembang Baik':n>=56?'Mulai Bertumbuh':'Belum Tumbuh';
 const hitung=s=>{const perAspek={};let total=0;ASPEK.forEach(a=>{perAspek[a.kode]=a.indikator.reduce((x,[n])=>x+(s?.[n]||0),0);total+=perAspek[a.kode]});const nilai=Math.round(total/48*1000)/10;return {perAspek,total,nilai,kategori:kategori(nilai)}};
-const buatCatatanOtomatis=(skor,calc)=>{
- const capaian=ASPEK.map(a=>({nama:a.nama,nilai:Math.round((calc.perAspek[a.kode]/(a.indikator.length*4))*100)}));
- const kuat=[...capaian].sort((a,b)=>b.nilai-a.nilai)[0];
- const perlu=[...capaian].sort((a,b)=>a.nilai-b.nilai)[0];
- const pembuka={
-  'Mengakar':'Murid menunjukkan cinta diri yang sangat kuat dan konsisten.',
-  'Berkembang Baik':'Murid menunjukkan cinta diri yang baik dan mulai konsisten.',
-  'Mulai Bertumbuh':'Murid mulai mencintai diri, tetapi masih memerlukan pembiasaan dan pendampingan.',
-  'Belum Tumbuh':'Murid memerlukan pendampingan intensif untuk menumbuhkan kemampuan menghargai dan merawat diri.'
- }[calc.kategori];
- return `${pembuka} Capaian paling kuat tampak pada aspek ${kuat.nama.toLowerCase()}. Aspek ${perlu.nama.toLowerCase()} masih perlu diperkuat melalui latihan mengelola emosi, tanggung jawab pribadi, serta kebiasaan menjaga kesehatan dan keselamatan diri.`;
-};
+const buatCatatanOtomatis=(skor,calc)=>REK[calc.kategori];
 const empty=(user)=>({tanggal:new Date().toISOString().slice(0,10),semester:'Ganjil',muridId:'',muridNama:'',kelasId:'',kelasNama:'',guruId:user.guruId||'',guruNama:user.nama||'',madrasahId:user.madrasahId||'',skor:{},catatan:''});
 export default function CekTumbuhCintaDiri(){
  const {user}=useAuth(), data=getData(); const [list,setList]=useState(data.cekTumbuhCintaDiri||[]),[form,setForm]=useState(null),[detail,setDetail]=useState(null),[q,setQ]=useState('');
