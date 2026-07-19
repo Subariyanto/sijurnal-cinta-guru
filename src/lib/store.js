@@ -163,6 +163,7 @@ export function getData() {
     cekTumbuhCintaIlmu: d.cekTumbuhCintaIlmu || [],
     cekTumbuhCintaLingkungan: d.cekTumbuhCintaLingkungan || [],
     cekTumbuhCintaDiri: d.cekTumbuhCintaDiri || [],
+    cekTumbuhCintaSesama: d.cekTumbuhCintaSesama || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],

@@ -23,6 +23,7 @@ import CekTumbuhCintaAllah from './pages/CekTumbuhCintaAllah';
 import CekTumbuhCintaIlmu from './pages/CekTumbuhCintaIlmu';
 import CekTumbuhCintaLingkungan from './pages/CekTumbuhCintaLingkungan';
 import CekTumbuhCintaDiri from './pages/CekTumbuhCintaDiri';
+import CekTumbuhCintaSesama from './pages/CekTumbuhCintaSesama';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="cek-tumbuh-cinta-ilmu" element={<CekTumbuhCintaIlmu />} />
         <Route path="cek-tumbuh-cinta-lingkungan" element={<CekTumbuhCintaLingkungan />} />
         <Route path="cek-tumbuh-cinta-diri" element={<CekTumbuhCintaDiri />} />
+        <Route path="cek-tumbuh-cinta-sesama" element={<CekTumbuhCintaSesama />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
         <Route path="panduan" element={<Panduan />} />
       </Route>
