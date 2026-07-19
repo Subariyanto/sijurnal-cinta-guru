@@ -161,6 +161,7 @@ export function getData() {
     observasiKarakter: d.observasiKarakter || [],
     cekTumbuhCintaAllah: d.cekTumbuhCintaAllah || [],
     cekTumbuhCintaIlmu: d.cekTumbuhCintaIlmu || [],
+    cekTumbuhCintaLingkungan: d.cekTumbuhCintaLingkungan || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],
     kodeAktivasi: d.kodeAktivasi || [],
@@ -199,3 +200,4 @@ export function updateCollection(key, arr) {
   d[key] = arr;
   saveAll(d);
 }
+

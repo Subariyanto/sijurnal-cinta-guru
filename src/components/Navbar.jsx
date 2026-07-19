@@ -24,6 +24,7 @@ const groups = [
       { to: '/observasi-karakter', label: 'Observasi Karakter Murid', icon: Sparkles },
       { to: '/cek-tumbuh-cinta-allah', label: 'Cek Tumbuh Kembang Cinta Allah', icon: Heart },
       { to: '/cek-tumbuh-cinta-ilmu', label: 'Cek Tumbuh Kembang Cinta Ilmu', icon: BookOpen },
+      { to: '/cek-tumbuh-cinta-lingkungan', label: 'Cek Tumbuh Kembang Cinta Lingkungan', icon: Heart },
       { to: '/observasi', label: 'Observasi Siswa', icon: Eye },
       { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers },
     ],
@@ -122,4 +123,6 @@ export default function Navbar() {
     </header>
   );
 }
+
+
 
