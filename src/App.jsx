@@ -18,6 +18,7 @@ import PembiasaanHarian from './pages/PembiasaanHarian';
 import ObservasiKarakter from './pages/ObservasiKarakter';
 import RekapInstrumen from './pages/RekapInstrumen';
 import Panduan from './pages/Panduan';
+import JurnalRefleksiMapel from './pages/JurnalRefleksiMapel';
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="jurnal/:id" element={<DetailJurnal />} />
         <Route path="laporan-pengawas" element={<ProtectedRoute roles={['pengawas', 'admin']}><LaporanPengawas /></ProtectedRoute>} />
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />
+        <Route path="jurnal-refleksi-mapel" element={<JurnalRefleksiMapel />} />
         <Route path="observasi-karakter" element={<ObservasiKarakter />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
         <Route path="panduan" element={<Panduan />} />

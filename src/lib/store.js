@@ -157,6 +157,7 @@ export function getData() {
     validasi: d.validasi || [],
     pengaturan: d.pengaturan || {},
     pembiasaanHarian: d.pembiasaanHarian || [],
+    jurnalRefleksiMapel: d.jurnalRefleksiMapel || [],
     observasiKarakter: d.observasiKarakter || [],
     instrumenKarakter: d.instrumenKarakter || [],
     murid: d.murid || [],

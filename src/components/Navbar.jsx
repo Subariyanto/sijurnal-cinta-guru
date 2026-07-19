@@ -20,6 +20,7 @@ const groups = [
     label: 'Pembiasaan & Instrumen', icon: Layers,
     items: [
       { to: '/pembiasaan-harian', label: 'Jurnal Pembiasaan Harian', icon: CalendarCheck },
+      { to: '/jurnal-refleksi-mapel', label: 'Jurnal Refleksi Guru Mapel', icon: Edit3 },
       { to: '/observasi-karakter', label: 'Observasi Karakter Murid', icon: Sparkles },
       { to: '/observasi', label: 'Observasi Siswa', icon: Eye },
       { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers },
