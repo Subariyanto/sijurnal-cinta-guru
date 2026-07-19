@@ -19,10 +19,10 @@ const REK={
 };const kategori=n=>n>=86?'Mengakar':n>=71?'Berkembang Baik':n>=56?'Mulai Bertumbuh':'Belum Tumbuh';
 const hitung=s=>{const perAspek={};let total=0;ASPEK.forEach(a=>{perAspek[a.kode]=a.indikator.reduce((x,[n])=>x+(s?.[n]||0),0);total+=perAspek[a.kode]});const nilai=Math.round(total/48*1000)/10;return {perAspek,total,nilai,kategori:kategori(nilai)}};
 const CATATAN_KATEGORI={
- 'Mengakar':'Murid melakukan perilaku secara konsisten dan dilakukan tanpa perlu dorongan dari luar diri serta memengaruhi orang lain untuk melakukan hal yang sama (memberikan teladan untuk lingkungan).',
- 'Berkembang Baik':'Murid sudah membiasakan perilaku yang diupayakan secara lebih sering dan relatif konsisten, tetapi masih sedikit bergantung pada dorongan dari luar diri (masih perlu sedikit dorongan).',
- 'Mulai Bertumbuh':'Murid mulai mencoba perilaku yang diharapkan, tetapi masih bersifat sesekali dan belum konsisten. Murid masih bergantung pada pengingat orang lain atau dorongan dari luar dirinya (belum menjadi kebiasaan).',
- 'Belum Tumbuh':'Murid belum menunjukkan perilaku yang diharapkan atau hanya mengetahui konsepnya tanpa penerapan nyata (tidak ada perubahan perilaku yang terlihat).'
+ 'Mengakar':'Murid melakukan perilaku secara konsisten dan dilakukan tanpa perlu dorongan dari luar diri serta mempengaruhi orang lain untuk melakukan hal yang sama (memberikan teladan untuk lingkungan).',
+ 'Berkembang Baik':'Sudah membiasakan perilaku yang diupayakan secara lebih sering dan relatif konsisten namun masih sedikit bergantung pada dorongan dari luar diri (masih perlu sedikit dorongan).',
+ 'Mulai Bertumbuh':'Murid mulai mencoba perilaku yang diharapkan tetapi masih bersifat sesekali dan belum konsisten. Masih bergantung pada pengingat orang lain atau dorongan di luar dirinya (belum menjadi kebiasaan).',
+ 'Belum Tumbuh':'Murid belum menunjukkan perilaku yang diharapkan atau hanya mengetahui konsepnya tanpa ada penerapan nyata (tidak ada perubahan perilaku yang terlihat).'
 };
 const buatCatatanOtomatis=(skor,calc)=>CATATAN_KATEGORI[calc.kategori];
 const empty=(user)=>({tanggal:new Date().toISOString().slice(0,10),semester:'Ganjil',muridId:'',muridNama:'',kelasId:'',kelasNama:'',guruId:user.guruId||'',guruNama:user.nama||'',madrasahId:user.madrasahId||'',skor:{},catatan:''});
