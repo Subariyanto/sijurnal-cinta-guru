@@ -12,24 +12,13 @@ const ASPEK = [
   [9,'Menyelesaikan tugas yang diberikan guru dengan sungguh-sungguh'],[10,'Tidak mengganggu teman yang sedang belajar'],[11,'Menghormati guru, orang tua, dan teman yang berbagi pengetahuan'],[12,'Menghargai pendapat teman saat berdiskusi']]}
 ];const LABEL={4:'Mengakar',3:'Berkembang Baik',2:'Mulai Bertumbuh',1:'Belum Tumbuh'};
 const REK={
- 'Mengakar':'Teruslah pertahankan rasa ingin tahu dan semangat belajarmu. Gunakan ilmu untuk membantu orang lain dan menciptakan hal bermanfaat. Terus aktif dalam riset, literasi, inovasi, serta menjadi teladan bagi murid lainnya.',
- 'Berkembang Baik':'Kecintaan terhadap ilmu telah tampak. Lebih aktiflah bertanya, mencari informasi dari berbagai sumber, dan menyampaikan gagasan. Biasakan belajar mandiri melalui eksplorasi serta refleksi pembelajaran secara konsisten.',
- 'Mulai Bertumbuh':'Biasakan membaca, bertanya ketika belum memahami pelajaran, dan menyelesaikan tugas dengan sungguh-sungguh. Ikuti kegiatan literasi, pembelajaran berbasis masalah, diskusi, dan kegiatan ilmiah.',
- 'Belum Tumbuh':'Mulailah membangun kebiasaan belajar sedikit demi sedikit. Jangan takut bertanya, mencoba hal baru, dan mencari pengetahuan. Perkuat motivasi diri serta berkolaborasi dengan teman untuk menumbuhkan cinta ilmu.'
+ 'Mengakar':'Teruslah pertahankan rasa ingin tahu dan semangat belajarmu. Gunakan ilmu yang kamu miliki untuk membantu orang lain dan menciptakan hal-hal yang bermanfaat, terus aktif terlibat dalam kegiatan riset, literasi, inovasi, serta kesempatan menjadi teladan bagi murid lainnya.',
+ 'Berkembang Baik':'Telah tampak menunjukkan kecintaan terhadap ilmu. Lebih aktiflah bertanya, mencari informasi dari berbagai sumber, dan berani menyampaikan gagasan dalam setiap kesempatan belajar. Biasakan belajar mandiri melalui kegiatan eksploratif serta refleksi pembelajaran secara konsisten.',
+ 'Mulai Bertumbuh':'Biasakan diri untuk membaca, bertanya ketika belum memahami pelajaran, dan menyelesaikan tugas dengan sungguh-sungguh agar kemampuan belajarmu terus berkembang, melalui kegiatan literasi, pembelajaran berbasis masalah, meningkatkan motivasi dan berpartisipasi dalam diskusi maupun kegiatan ilmiah.',
+ 'Belum Tumbuh':'Mulailah membangun kebiasaan belajar sedikit demi sedikit. Jangan takut bertanya, mencoba hal baru, dan mencari pengetahuan yang dapat membantu dirimu berkembang, melalui pembiasaan belajar, penguatan motivasi intrinsik, serta berkolaborasi dengan teman untuk menumbuhkan minat belajar dan kecintaan terhadap ilmu pengetahuan.'
 };const kategori=n=>n>=86?'Mengakar':n>=71?'Berkembang Baik':n>=56?'Mulai Bertumbuh':'Belum Tumbuh';
 const hitung=s=>{const perAspek={};let total=0;ASPEK.forEach(a=>{perAspek[a.kode]=a.indikator.reduce((x,[n])=>x+(s?.[n]||0),0);total+=perAspek[a.kode]});const nilai=Math.round(total/48*1000)/10;return {perAspek,total,nilai,kategori:kategori(nilai)}};
-const buatCatatanOtomatis=(skor,calc)=>{
- const capaian=ASPEK.map(a=>({nama:a.nama,nilai:Math.round((calc.perAspek[a.kode]/(a.indikator.length*4))*100)}));
- const kuat=[...capaian].sort((a,b)=>b.nilai-a.nilai)[0];
- const perlu=[...capaian].sort((a,b)=>a.nilai-b.nilai)[0];
- const pembuka={
-  'Mengakar':'Murid menunjukkan kecintaan terhadap ilmu yang sangat kuat dan konsisten.',
-  'Berkembang Baik':'Murid menunjukkan kecintaan terhadap ilmu yang baik dan mulai konsisten.',
-  'Mulai Bertumbuh':'Murid mulai menumbuhkan cinta ilmu, tetapi masih memerlukan pembiasaan dan pendampingan.',
-  'Belum Tumbuh':'Murid memerlukan pendampingan intensif untuk menumbuhkan rasa ingin tahu dan kebiasaan belajar.'
- }[calc.kategori];
- return `${pembuka} Capaian paling kuat tampak pada aspek ${kuat.nama.toLowerCase()}. Aspek ${perlu.nama.toLowerCase()} masih perlu diperkuat melalui kegiatan literasi, eksplorasi, diskusi, dan pembiasaan belajar di madrasah maupun di rumah.`;
-};
+const buatCatatanOtomatis=(skor,calc)=>REK[calc.kategori];
 const empty=(user)=>({tanggal:new Date().toISOString().slice(0,10),semester:'Ganjil',muridId:'',muridNama:'',kelasId:'',kelasNama:'',guruId:user.guruId||'',guruNama:user.nama||'',madrasahId:user.madrasahId||'',skor:{},catatan:''});
 export default function CekTumbuhCintaIlmu(){
  const {user}=useAuth(), data=getData(); const [list,setList]=useState(data.cekTumbuhCintaIlmu||[]),[form,setForm]=useState(null),[detail,setDetail]=useState(null),[q,setQ]=useState('');
