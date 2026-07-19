@@ -35,12 +35,12 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white shadow-sm">
       <div className="bg-[#102a4d] text-white">
         <div className="max-w-[1600px] mx-auto h-16 px-4 md:px-6 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#eecb59] text-[#102a4d] flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#eecb59] text-pink-500 flex items-center justify-center flex-shrink-0">
             <Heart className="w-5 h-5" fill="currentColor" />
           </div>
           <div className="leading-tight">
-            <h1 className="font-bold text-sm sm:text-base">e-Jurnal KBC Madrasah</h1>
-            <p className="text-[11px] sm:text-xs text-blue-200">Kurikulum Berbasis Cinta</p>
+            <h1 className="font-bold text-sm sm:text-base">e-Jurnal Refleksi Harian Guru</h1>
+            <p className="text-[11px] sm:text-xs text-blue-200">Berbasis Panca Cinta</p>
           </div>
           <div className="ml-auto hidden md:flex items-center gap-3">
             <div className="text-right leading-tight">
