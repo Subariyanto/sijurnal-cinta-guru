@@ -3,7 +3,6 @@ import { getData, updateCollection, setData } from '../lib/store';
 import { createSeedData } from '../lib/seed';
 import { useAuth } from '../lib/AuthContext';
 import { getSyncSettings, saveSyncSettings, syncToServer, listMadrasahFromServer } from '../lib/sync';
-import { listKodeAktivasi, createKodeAktivasi, deleteKodeAktivasi, ROLE_LABEL, isKodeServerMode, getAllKodeAktivasiLocal } from '../lib/aktivasi';
 import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle, Server, HardDrive, ArrowUpCircle } from 'lucide-react';
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
@@ -310,121 +309,6 @@ export default function Pengaturan() {
           </div>
         )}
       </div>
-      )}
-
-      {isAdmin && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-[#eecb59]"/><h3 className="font-semibold text-gray-800">Kode Aktivasi Pendaftaran</h3></div>
-            <div className="flex items-center gap-2 text-xs">
-              {kodeServer ? (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold"><Server className="w-3 h-3"/>Mode Server</span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-semibold"><HardDrive className="w-3 h-3"/>Mode Local</span>
-              )}
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mb-3">{kodeServer
-            ? 'Kode tersimpan di server (Google Sheet via Apps Script). Bisa generate di laptop, dipakai user di HP/laptop lain.'
-            : 'Kode tersimpan di browser ini saja. Untuk multi-device, aktifkan mode server di bawah (butuh endpoint sync sudah di-set).'}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <button
-              onClick={() => handleToggleKodeServer(!sync.kodeServer)}
-              disabled={!sync.endpoint || !sync.token}
-              className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${sync.kodeServer ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} disabled:opacity-50`}
-              title={!sync.endpoint || !sync.token ? 'Set endpoint+token sync dulu di section Sync di bawah' : ''}
-            >
-              {sync.kodeServer ? <><Server className="w-3.5 h-3.5"/>Mode Server: ON</> : <><HardDrive className="w-3.5 h-3.5"/>Aktifkan Mode Server</>}
-            </button>
-            <button onClick={refreshKode} disabled={kodeLoading} className="px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center gap-2 disabled:opacity-50">
-              <RefreshCw className={`w-3.5 h-3.5 ${kodeLoading ? 'animate-spin' : ''}`}/>Refresh
-            </button>
-            {sync.kodeServer && getAllKodeAktivasiLocal().length > 0 && (
-              <button onClick={handleMigrateLocalKeServer} disabled={kodeLoading} className="px-3 py-2 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 flex items-center gap-2 disabled:opacity-50" title={`Push ${getAllKodeAktivasiLocal().length} kode dari local ke server`}>
-                <ArrowUpCircle className="w-3.5 h-3.5"/>Migrasi {getAllKodeAktivasiLocal().length} kode local → server
-              </button>
-            )}
-            {!sync.endpoint && (
-              <span className="text-[11px] text-amber-600">⚠️ Set endpoint sync di bawah dulu untuk pakai mode server.</span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-gray-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Total</p><p className="text-2xl font-bold text-gray-800">{stat.total}</p></div>
-            <div className="bg-emerald-50 rounded-lg p-3 text-center"><p className="text-xs text-emerald-700">Tersedia</p><p className="text-2xl font-bold text-emerald-700">{stat.tersedia}</p></div>
-            <div className="bg-amber-50 rounded-lg p-3 text-center"><p className="text-xs text-amber-700">Terpakai</p><p className="text-2xl font-bold text-amber-700">{stat.terpakai}</p></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Peran (Role)</label>
-              <select value={kodeRole} onChange={e=>setKodeRole(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#eecb59] outline-none">
-                <option value="guru">Guru</option>
-                <option value="kepala_madrasah">Kepala Madrasah</option>
-                <option value="pengawas">Pengawas</option>
-                <option value="operator">Operator</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Deskripsi (opsional)</label>
-              <input value={kodeDeskripsi} onChange={e=>setKodeDeskripsi(e.target.value)} placeholder="contoh: Guru MI Nurul Huda Sukowono" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#eecb59] outline-none"/>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah</label>
-              <input type="number" min="1" max="50" value={kodeJumlah} onChange={e=>setKodeJumlah(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#eecb59] outline-none"/>
-            </div>
-          </div>
-          <button onClick={handleGenerateKode} disabled={kodeLoading} className="px-4 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center gap-2 mb-4 disabled:opacity-60">{kodeLoading ? <RefreshCw className="w-4 h-4 animate-spin"/> : <Plus className="w-4 h-4"/>}Generate Kode Aktivasi</button>
-
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-medium text-gray-700">Filter:</span>
-            {['semua','tersedia','terpakai'].map(f => (
-              <button key={f} onClick={()=>setKodeFilter(f)} className={`px-3 py-1 rounded-full text-xs font-medium ${kodeFilter===f ? 'bg-[#102a4d] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.charAt(0).toUpperCase()+f.slice(1)}</button>
-            ))}
-          </div>
-
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="text-left px-3 py-2 font-semibold">Kode</th>
-                  <th className="text-left px-3 py-2 font-semibold">Role</th>
-                  <th className="text-left px-3 py-2 font-semibold">Deskripsi</th>
-                  <th className="text-left px-3 py-2 font-semibold">Status</th>
-                  <th className="text-left px-3 py-2 font-semibold">Dibuat</th>
-                  <th className="text-right px-3 py-2 font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kodeLoading && (
-                  <tr><td colSpan="6" className="text-center py-6 text-gray-400 italic">Memuat...</td></tr>
-                )}
-                {!kodeLoading && filteredKode.length === 0 && (
-                  <tr><td colSpan="6" className="text-center py-6 text-gray-400 italic">Belum ada kode aktivasi.</td></tr>
-                )}
-                {!kodeLoading && filteredKode.map(k => (
-                  <tr key={k.id || k.kode} className="border-t border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-3 py-2 font-mono font-semibold text-[#102a4d]">{k.kode}</td>
-                    <td className="px-3 py-2">{ROLE_LABEL(k.role)}</td>
-                    <td className="px-3 py-2 text-gray-600">{k.deskripsi || <span className="text-gray-400 italic">-</span>}</td>
-                    <td className="px-3 py-2">{k.digunakan ? (<span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Terpakai oleh {k.digunakanOlehUsername || k.digunakanOleh}</span>) : (<span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-semibold">Tersedia</span>)}</td>
-                    <td className="px-3 py-2 text-gray-500">{k.dibuatTanggal ? new Date(k.dibuatTanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-'}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={()=>handleCopyKode(k.kode)} title="Salin kode" className="p-1.5 text-gray-500 hover:text-[#102a4d] hover:bg-blue-50 rounded"><Copy className="w-3.5 h-3.5"/></button>
-                        {!k.digunakan && (<button onClick={()=>handleShareKode(k)} title="Bagikan via WhatsApp" className="p-1.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded"><MessageCircle className="w-3.5 h-3.5"/></button>)}
-                        {!k.digunakan && (<button onClick={()=>handleDeleteKode(k)} title="Hapus" className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button>)}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
       <div className="bg-gradient-to-br from-[#102a4d] to-[#1a3a6b] text-white rounded-xl p-5">

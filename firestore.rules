@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function role(r) { return signedIn() && me().role == r; }
+    function role(r) { return signedIn() && me().aktif != false && me().role == r; }
     function validRole(r) { return r in ['admin', 'pengawas', 'kamad', 'guru']; }
     function canAccess(d) {
       return role('admin')

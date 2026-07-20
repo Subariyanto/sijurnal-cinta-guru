@@ -21,6 +21,10 @@ export function AuthProvider({ children }) {
         await signOut(auth);
         throw new Error('Profil pengguna belum dibuat oleh admin.');
       }
+      if (profile.aktif === false) {
+        await signOut(auth);
+        throw new Error('Akun dinonaktifkan. Hubungi admin.');
+      }
       // Compatibility with existing UI naming.
       const appUser = { ...profile, uid: firebaseUser.uid, email: firebaseUser.email };
       setUser(appUser);
@@ -39,6 +43,10 @@ export function AuthProvider({ children }) {
     if (!profile) {
       await signOut(auth);
       throw new Error('Profil pengguna belum dibuat oleh admin.');
+    }
+    if (profile.aktif === false) {
+      await signOut(auth);
+      throw new Error('Akun dinonaktifkan. Hubungi admin.');
     }
     return { ...profile, uid: credential.user.uid, email: credential.user.email };
   };
