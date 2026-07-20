@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { LogIn, Eye, EyeOff, UserPlus, ShoppingCart, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 
@@ -20,7 +20,7 @@ function Toast({ msg, type }) {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +34,9 @@ export default function Login() {
   const [regPassword, setRegPassword] = useState('');
   const [regPassword2, setRegPassword2] = useState('');
   const [regKode, setRegKode] = useState('');
+  const [regRole, setRegRole] = useState('guru');
+  const [regMadrasahId, setRegMadrasahId] = useState('');
+  const [regBinaan, setRegBinaan] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const showToast = (msg, type = 'success') => {
@@ -55,8 +58,15 @@ export default function Login() {
   };
 
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('Pendaftaran mandiri dinonaktifkan. Hubungi admin untuk pembuatan akun dan penetapan role.');
+    e.preventDefault(); setError('');
+    if (regPassword !== regPassword2) return setError('Konfirmasi password tidak sama.');
+    if (regPassword.length < 6) return setError('Password minimal 6 karakter.');
+    setSubmitting(true);
+    try {
+      await register({ email:regUsername, password:regPassword, nama:regNama, code:regKode, role:regRole, madrasahId:regRole==='pengawas'?'':regMadrasahId, madrasahBinaanIds:regRole==='pengawas'?regBinaan.split(',').map(x=>x.trim()).filter(Boolean):[] });
+      showToast('Registrasi berhasil. Akun siap digunakan.'); setMode('login');
+    } catch (err) { setError(err.code === 'auth/email-already-in-use' ? 'Email sudah terdaftar.' : 'Kode tidak valid/kedaluwarsa, atau role dan scope tidak cocok.'); }
+    finally { setSubmitting(false); }
   };
 
   return (
@@ -174,6 +184,10 @@ export default function Login() {
                 autoComplete="off"
               />
             </div>
+            <div className="grid grid-cols-1 gap-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Peran</label><select value={regRole} onChange={e=>setRegRole(e.target.value)} className="w-full px-4 py-2.5 border rounded-lg"><option value="guru">Guru</option><option value="kamad">Kepala Madrasah</option><option value="pengawas">Pengawas</option></select></div>
+              {regRole !== 'pengawas' ? <div><label className="block text-sm font-medium text-gray-700 mb-1">ID Madrasah</label><input required value={regMadrasahId} onChange={e=>setRegMadrasahId(e.target.value.trim())} className="w-full px-4 py-2.5 border rounded-lg" placeholder="Contoh: MIN-01-JEMBER"/></div> : <div><label className="block text-sm font-medium text-gray-700 mb-1">ID Madrasah Binaan</label><input required value={regBinaan} onChange={e=>setRegBinaan(e.target.value)} className="w-full px-4 py-2.5 border rounded-lg" placeholder="Pisahkan dengan koma"/></div>}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
               <input
@@ -226,7 +240,7 @@ export default function Login() {
             </button>
             <div className="bg-blue-50 text-blue-700 text-[11px] p-3 rounded-lg flex gap-2 leading-relaxed">
               <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>Akun disimpan di perangkat ini (localStorage). Untuk akses lintas perangkat dan fitur penuh, silakan beli Lisensi FULL.</span>
+              <span>Akun tersimpan aman di Firebase. Role dan cakupan madrasah harus persis sama dengan kode aktivasi.</span>
             </div>
             <div className="text-center text-sm text-gray-600">
               Sudah punya akun?{' '}

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from './firebase';
+import { createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { activationCodeId } from './activationCodes';
 import { getUserProfile } from './firestore';
 import { connectStore, subscribeStore } from './store';
 
@@ -51,8 +53,18 @@ export function AuthProvider({ children }) {
     return { ...profile, uid: credential.user.uid, email: credential.user.email };
   };
 
+  const register = async ({ email, password, nama, code, role, madrasahId, madrasahBinaanIds }) => {
+    const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+    const uid = credential.user.uid; const codeId = activationCodeId(code);
+    try {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'users', uid), { email: credential.user.email, nama: nama.trim(), role, madrasahId: madrasahId.trim(), madrasahBinaanIds, aktif:true, activationCodeId:codeId, createdAt:serverTimestamp(), updatedAt:serverTimestamp() });
+      batch.update(doc(db, 'activationCodes', codeId), { used:true, usedBy:uid, usedAt:serverTimestamp() });
+      await batch.commit(); return credential.user;
+    } catch (error) { await deleteUser(credential.user).catch(() => {}); throw error; }
+  };
   const logout = () => signOut(auth);
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

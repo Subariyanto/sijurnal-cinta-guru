@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getData, updateCollection, setData } from '../lib/store';
+import { getData, setData } from '../lib/store';
 import { createSeedData } from '../lib/seed';
+import { createActivationCode, deleteActivationCode, listActivationCodes, revokeActivationCode, ROLE_LABELS } from '../lib/activationCodes';
 import { useAuth } from '../lib/AuthContext';
 import { getSyncSettings, saveSyncSettings, syncToServer, listMadrasahFromServer } from '../lib/sync';
-import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound, Plus, Copy, Trash2, MessageCircle, Server, HardDrive, ArrowUpCircle } from 'lucide-react';
+import { Save, RefreshCw, Download, Upload, Settings, Database, AlertTriangle, Cloud, CloudUpload, CheckCircle2, ExternalLink, KeyRound } from 'lucide-react';
 
 function showToast(msg, type) { const el = document.createElement('div'); el.className = `fixed bottom-4 right-4 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${type==='success'?'bg-green-600':'bg-red-600'}`; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
 
@@ -38,11 +39,11 @@ export default function Pengaturan() {
         senderNama: user?.nama || '-',
         senderRole: user?.role || '-',
       });
-      setSyncMsg('✅ Sync berhasil: ' + (res.timestamp || ''));
+      setSyncMsg('âœ… Sync berhasil: ' + (res.timestamp || ''));
       setSync(getSyncSettings());
       showToast('Data berhasil dikirim ke Pokjawas','success');
     } catch (e) {
-      setSyncMsg('❌ ' + e.message);
+      setSyncMsg('âŒ ' + e.message);
       showToast('Gagal sync: ' + e.message,'error');
     } finally {
       setSyncing(false);
@@ -112,19 +113,17 @@ export default function Pengaturan() {
   const stats = getData();
   const isAdmin = user?.role === 'admin';
 
-  // === Kode Aktivasi state ===
+  // === Kode Aktivasi Firebase ===
   const [kodeList, setKodeList] = useState([]);
   const [kodeRole, setKodeRole] = useState('guru');
-  const [kodeDeskripsi, setKodeDeskripsi] = useState('');
-  const [kodeJumlah, setKodeJumlah] = useState(1);
-  const [kodeFilter, setKodeFilter] = useState('semua');
+  const [kodeEmail, setKodeEmail] = useState('');
+  const [kodeMadrasah, setKodeMadrasah] = useState('');
   const [kodeLoading, setKodeLoading] = useState(false);
-  const [kodeServer, setKodeServer] = useState(isKodeServerMode());
 
   const refreshKode = async () => {
     setKodeLoading(true);
     try {
-      const list = await listKodeAktivasi();
+      const list = await listActivationCodes();
       setKodeList(list);
     } catch (e) {
       showToast('Gagal load kode: ' + e.message, 'error');
@@ -136,59 +135,16 @@ export default function Pengaturan() {
   useEffect(() => {
     if (isAdmin) refreshKode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, kodeServer]);
-
-  const handleToggleKodeServer = (enabled) => {
-    const next = { ...sync, kodeServer: enabled };
-    setSync(next);
-    saveSyncSettings(next);
-    setKodeServer(isKodeServerMode());
-    showToast(enabled ? 'Mode server kode aktivasi aktif' : 'Kembali ke mode local', 'success');
-  };
-
-  const handleMigrateLocalKeServer = async () => {
-    const localKode = getAllKodeAktivasiLocal();
-    if (localKode.length === 0) { showToast('Tidak ada kode local untuk dimigrasi', 'error'); return; }
-    if (!confirm(`Push ${localKode.length} kode dari local ke server? Kode yang sudah ada di server akan di-skip otomatis.`)) return;
-    setKodeLoading(true);
-    try {
-      const cfg = sync;
-      const res = await fetch(cfg.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'kode-create', token: cfg.token, items: localKode }),
-        redirect: 'follow',
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Gagal migrasi');
-      showToast(`${json.created} kode berhasil dimigrasi ke server (sisanya duplikat).`, 'success');
-      await refreshKode();
-    } catch (e) {
-      showToast('Gagal migrasi: ' + e.message, 'error');
-    } finally {
-      setKodeLoading(false);
-    }
-  };
+  }, [isAdmin]);
 
   const handleGenerateKode = async () => {
-    const n = Math.max(1, Math.min(50, parseInt(kodeJumlah, 10) || 1));
     setKodeLoading(true);
     try {
-      const created = await createKodeAktivasi({
-        role: kodeRole,
-        deskripsi: kodeDeskripsi.trim(),
-        dibuatOleh: user?.nama || user?.username || '-',
-        count: n,
-      });
-      showToast(`${created.length} kode aktivasi berhasil dibuat`, 'success');
-      setKodeDeskripsi('');
-      setKodeJumlah(1);
-      await refreshKode();
-    } catch (e) {
-      showToast('Gagal generate: ' + e.message, 'error');
-    } finally {
-      setKodeLoading(false);
-    }
+      const ids = kodeMadrasah.split(',').map(x=>x.trim()).filter(Boolean);
+      const code = await createActivationCode({ role:kodeRole, email:kodeEmail, madrasahId:kodeRole==='pengawas'?'':ids[0], madrasahBinaanIds:kodeRole==='pengawas'?ids:[], createdBy:user.uid });
+      await navigator.clipboard?.writeText(code); showToast(`Kode ${code} dibuat & disalin`, 'success');
+      setKodeEmail(''); setKodeMadrasah(''); await refreshKode();
+    } catch (e) { showToast('Gagal generate: ' + e.message, 'error'); } finally { setKodeLoading(false); }
   };
 
   const handleCopyKode = (kode) => {
@@ -196,33 +152,6 @@ export default function Pengaturan() {
     showToast(`Kode ${kode} disalin`, 'success');
   };
 
-  const handleShareKode = (item) => {
-    const teks = `Assalamualaikum.\n\nBerikut Kode Aktivasi e-Jurnal KBC Madrasah Bapak/Ibu:\n\nKode: ${item.kode}\nPeran: ${ROLE_LABEL(item.role)}\n\nCara daftar:\n1. Buka aplikasi\n2. Klik "Daftar di sini"\n3. Masukkan kode di atas, lengkapi data, lalu klik Daftar.\n\nKode hanya bisa digunakan satu kali.`;
-    const url = `https://wa.me/?text=${encodeURIComponent(teks)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleDeleteKode = async (item) => {
-    if (item.digunakan) { showToast('Kode yang sudah dipakai tidak bisa dihapus', 'error'); return; }
-    if (!confirm(`Hapus kode ${item.kode}?`)) return;
-    setKodeLoading(true);
-    try {
-      await deleteKodeAktivasi(item);
-      showToast('Kode dihapus', 'success');
-      await refreshKode();
-    } catch (e) {
-      showToast('Gagal hapus: ' + e.message, 'error');
-    } finally {
-      setKodeLoading(false);
-    }
-  };
-
-  const filteredKode = kodeList.filter(k => kodeFilter === 'semua' || (kodeFilter === 'tersedia' ? !k.digunakan : k.digunakan)).slice().reverse();
-  const stat = {
-    total: kodeList.length,
-    tersedia: kodeList.filter(k => !k.digunakan).length,
-    terpakai: kodeList.filter(k => k.digunakan).length,
-  };
 
   return (
     <div className="space-y-6" key={tick}>
@@ -311,20 +240,21 @@ export default function Pengaturan() {
       </div>
       )}
 
-      <div className="bg-gradient-to-br from-[#102a4d] to-[#1a3a6b] text-white rounded-xl p-5">
-        <div className="flex flex-wrap items-center gap-6">
-          <div>
-            <p className="text-xs text-white/70">Aplikasi</p>
-            <p className="font-semibold">{settings.namaAplikasi}</p>
-            <p className="text-xs text-white/70 mt-1">Versi 1.0.0 • LocalStorage</p>
+      {isAdmin && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
+          <div className="flex items-center justify-between"><div className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-[#eecb59]"/><h3 className="font-semibold">Kode Aktivasi Firebase</h3></div><button onClick={refreshKode} disabled={kodeLoading} className="text-sm px-3 py-2 border rounded-lg">Muat Ulang</button></div>
+          <div className="grid md:grid-cols-3 gap-3">
+            <select value={kodeRole} onChange={e=>setKodeRole(e.target.value)} className="px-3 py-2 border rounded-lg"><option value="guru">Guru</option><option value="kamad">Kepala Madrasah</option><option value="pengawas">Pengawas</option></select>
+            <input value={kodeMadrasah} onChange={e=>setKodeMadrasah(e.target.value)} placeholder={kodeRole==='pengawas'?'ID madrasah binaan, pisahkan koma':'ID madrasah'} className="px-3 py-2 border rounded-lg"/>
+            <input type="email" value={kodeEmail} onChange={e=>setKodeEmail(e.target.value)} placeholder="Email terikat (opsional)" className="px-3 py-2 border rounded-lg"/>
           </div>
-          <div className="h-12 w-px bg-white/20"></div>
-          <div className="grid grid-cols-3 gap-6 flex-1">
-            <div><p className="text-xs text-white/70">Total Jurnal</p><p className="text-2xl font-bold">{stats.jurnalHarian.length}</p></div>
-            <div><p className="text-xs text-white/70">Total Guru</p><p className="text-2xl font-bold">{stats.guru.length}</p></div>
-            <div><p className="text-xs text-white/70">Total Madrasah</p><p className="text-2xl font-bold">{stats.madrasah.length}</p></div>
-          </div>
+          <button onClick={handleGenerateKode} disabled={kodeLoading || !kodeMadrasah.trim()} className="px-4 py-2 rounded-lg bg-[#102a4d] text-white disabled:opacity-50">Buat Kode</button>
+          <div className="space-y-2">{kodeList.map(item=><div key={item.id} className="flex flex-wrap items-center gap-3 border rounded-lg p-3 text-sm"><code className="font-bold">{item.code}</code><span>{ROLE_LABELS[item.role]}</span><span>{item.madrasahId || item.madrasahBinaanIds?.join(', ')}</span><span className={item.used?'text-gray-500':item.active?'text-green-600':'text-red-600'}>{item.used?'Terpakai':item.active?'Aktif':'Dicabut'}</span><button onClick={()=>handleCopyKode(item.code)} className="ml-auto">Salin</button>{item.active&&!item.used&&<button onClick={async()=>{await revokeActivationCode(item.id); await refreshKode();}} className="text-red-600">Cabut</button>}{!item.used&&<button onClick={async()=>{if(confirm(`Hapus ${item.code}?`)){await deleteActivationCode(item.id); await refreshKode();}}} className="text-red-700">Hapus</button>}</div>)}</div>
         </div>
+      )}
+
+      <div className="bg-gradient-to-br from-[#102a4d] to-[#1a3a6b] text-white rounded-xl p-5">
+        <div className="flex flex-wrap items-center gap-6"><div><p className="text-xs text-white/70">Aplikasi</p><p className="font-semibold">{settings.namaAplikasi}</p><p className="text-xs text-white/70 mt-1">Versi 1.0.0 · Firebase</p></div><div className="h-12 w-px bg-white/20"></div><div className="grid grid-cols-3 gap-6 flex-1"><div><p className="text-xs text-white/70">Total Jurnal</p><p className="text-2xl font-bold">{stats.jurnalHarian.length}</p></div><div><p className="text-xs text-white/70">Total Guru</p><p className="text-2xl font-bold">{stats.guru.length}</p></div><div><p className="text-xs text-white/70">Total Madrasah</p><p className="text-2xl font-bold">{stats.madrasah.length}</p></div></div></div>
       </div>
     </div>
   );
