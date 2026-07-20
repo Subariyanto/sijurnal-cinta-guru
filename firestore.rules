@@ -56,7 +56,9 @@ service cloud.firestore {
     match /madrasah/{id} {
       allow read: if role('admin') || (role('kamad') && id == me().madrasahId)
         || (role('pengawas') && id in me().madrasahBinaanIds);
-      allow write: if role('admin');
+      allow create: if role('admin') || (role('kamad') && id == me().madrasahId);
+      allow update: if role('admin') || (role('kamad') && id == me().madrasahId);
+      allow delete: if role('admin');
     }
     match /guru/{id} {
       allow read: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId)

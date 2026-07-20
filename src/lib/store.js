@@ -11,6 +11,38 @@ export const NILAI_PANCA_CINTA = [
   'Cinta Lingkungan',
   'Cinta Tanah Air',
 ];
+export const INDIKATOR_PANCA_CINTA_DEFAULT = [
+  { id: 'pc1', nama: 'Cinta Allah dan Rasul', indikator: [
+    { id: 'pc1-1', teks: 'Membiasakan doa sebelum dan sesudah belajar' },
+    { id: 'pc1-2', teks: 'Menunjukkan akhlak santun dalam pembelajaran' },
+    { id: 'pc1-3', teks: 'Meneladani perilaku Rasulullah SAW' },
+    { id: 'pc1-4', teks: 'Membiasakan rasa syukur atas nikmat ilmu' },
+  ]},
+  { id: 'pc2', nama: 'Cinta Ilmu', indikator: [
+    { id: 'pc2-1', teks: 'Siswa aktif bertanya dan berdiskusi' },
+    { id: 'pc2-2', teks: 'Siswa mencari informasi dari berbagai sumber' },
+    { id: 'pc2-3', teks: 'Siswa berani menyampaikan pendapat' },
+    { id: 'pc2-4', teks: 'Siswa menyelesaikan tugas dengan sungguh-sungguh' },
+  ]},
+  { id: 'pc3', nama: 'Cinta Diri dan Sesama', indikator: [
+    { id: 'pc3-1', teks: 'Siswa menghargai pendapat teman' },
+    { id: 'pc3-2', teks: 'Siswa membantu teman yang kesulitan' },
+    { id: 'pc3-3', teks: 'Siswa tidak mengejek atau membully' },
+    { id: 'pc3-4', teks: 'Siswa bekerja sama dalam kelompok' },
+  ]},
+  { id: 'pc4', nama: 'Cinta Lingkungan', indikator: [
+    { id: 'pc4-1', teks: 'Siswa menjaga kebersihan kelas' },
+    { id: 'pc4-2', teks: 'Siswa membuang sampah pada tempatnya' },
+    { id: 'pc4-3', teks: 'Siswa hemat air dan listrik' },
+    { id: 'pc4-4', teks: 'Siswa merawat tanaman di lingkungan madrasah' },
+  ]},
+  { id: 'pc5', nama: 'Cinta Tanah Air', indikator: [
+    { id: 'pc5-1', teks: 'Siswa menghargai simbol negara' },
+    { id: 'pc5-2', teks: 'Siswa mengenal dan bangga budaya Indonesia' },
+    { id: 'pc5-3', teks: 'Siswa menghargai keberagaman' },
+    { id: 'pc5-4', teks: 'Siswa bangga menjadi bagian dari bangsa Indonesia' },
+  ]},
+];
 export const STATUS_JURNAL = ['Draft', 'Dikirim', 'Disetujui', 'Perlu Revisi'];
 export const JENIS_EVIDEN = [
   'Foto kegiatan', 'Video kegiatan', 'Dokumen RPP/Modul Ajar', 'LKPD',
@@ -139,6 +171,7 @@ const cache = Object.fromEntries(COLLECTIONS.map(k => [k, k === 'pengaturan' ? {
 let profile = null;
 let unsubscribers = [];
 let listeners = new Set();
+let indicatorDefaultsPersisted = false;
 
 function emit() { listeners.forEach(fn => fn(getData())); }
 function report(error) { console.error('Firestore operation failed', error); window.dispatchEvent(new CustomEvent('firestore-error', { detail: error })); }
@@ -163,7 +196,18 @@ export function connectStore(user) {
     // Guru has no Master Data access. Avoid denied listeners and stale cache leaks.
     if (user.role === 'guru' && ['madrasah','guru','kelas','murid','indikatorPancaCinta'].includes(key)) { cache[key] = []; return; }
     unsubscribers.push(onSnapshot(collectionQuery(key), snap => {
-      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (key === 'indikatorPancaCinta' && rows.length === 0) {
+        rows = INDIKATOR_PANCA_CINTA_DEFAULT.map(row => ({ ...row, indikator: row.indikator.map(i => ({ ...i })) }));
+        // Canonical shared defaults are persisted once by an authorized admin.
+        // Other roles still get a reliable read-only fallback while the collection is empty.
+        if (user.role === 'admin' && !indicatorDefaultsPersisted) {
+          indicatorDefaultsPersisted = true;
+          const batch = writeBatch(db);
+          rows.forEach(({ id, ...payload }) => batch.set(doc(db, 'indikatorPancaCinta', id), { ...payload, updatedAt: serverTimestamp() }));
+          batch.commit().catch(error => { indicatorDefaultsPersisted = false; report(error); });
+        }
+      }
       cache[key] = key === 'pengaturan' ? (rows[0] || {}) : rows;
       emit();
     }, report));

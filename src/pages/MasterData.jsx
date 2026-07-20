@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getData, updateCollection, addItem, updateItem, deleteItem, generateId } from '../lib/store';
 import { Plus, Search, Edit, Trash2, X, Save, Building2, Users, BookOpen, Heart, GraduationCap, FileDown, Upload, FileText } from 'lucide-react';
 import { JENJANG, NILAI_PANCA_CINTA, ROLE_LIST } from '../lib/store';
@@ -33,8 +33,8 @@ function TemplateImportExport({ onTemplate, onImport, onExport }) {
 
 export default function MasterData() {
   const { user } = useAuth();
-  const [tab, setTab] = useState(user.role === 'kamad' ? 'guru' : 'madrasah');
-  const canEditMadrasah = user.role === 'admin';
+  const [tab, setTab] = useState('madrasah');
+  const canEditMadrasah = user.role === 'admin' || user.role === 'kamad';
   const canEditTenantData = user.role === 'admin' || user.role === 'kamad';
   const refresh = useDataRefresher();
 
@@ -62,7 +62,7 @@ export default function MasterData() {
       </div>
 
       {user.role === 'pengawas' && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">Mode baca saja untuk madrasah binaan.</p>}
-      {tab === 'madrasah' && <MadrasahTab refresh={refresh} canEdit={canEditMadrasah} />}
+      {tab === 'madrasah' && <MadrasahTab refresh={refresh} canEdit={canEditMadrasah} user={user} />}
       {tab === 'guru' && <GuruTab refresh={refresh} canEdit={canEditTenantData} />}
       {tab === 'kelas' && <KelasTab refresh={refresh} canEdit={canEditTenantData} />}
       {tab === 'murid' && <MuridTab refresh={refresh} canEdit={canEditTenantData} />}
@@ -71,12 +71,18 @@ export default function MasterData() {
   );
 }
 
-function MadrasahTab({ refresh, canEdit }) {
+function MadrasahTab({ refresh, canEdit, user }) {
   const data = getData();
+  const isKamad = user.role === 'kamad';
+  const scoped = data.madrasah.find(m => m.id === user.madrasahId);
   const [list, setList] = useState(data.madrasah);
   const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({});
+  const [showModal, setShowModal] = useState(isKamad);
+  const [form, setForm] = useState(isKamad ? { nama:'', nsmNpsn:'', jenjang:'MI', alamat:'', kepalaMadrasah:'', kecamatan:'', pengawas:'', ...scoped, id:user.madrasahId } : {});
+
+  useEffect(() => {
+    if (isKamad && scoped) setForm({ ...scoped, id:user.madrasahId });
+  }, [isKamad, scoped, user.madrasahId]);
 
   const filtered = list.filter(m => `${m.nama} ${m.nsmNpsn} ${m.kecamatan}`.toLowerCase().includes(search.toLowerCase()));
 
@@ -85,6 +91,11 @@ function MadrasahTab({ refresh, canEdit }) {
 
   const save = () => {
     if (!form.nama) return showToast('Nama madrasah wajib diisi','error');
+    if (isKamad) {
+      const payload = { ...form, id:user.madrasahId };
+      if (scoped) updateItem('madrasah', user.madrasahId, payload); else addItem('madrasah', payload);
+      setForm(payload); showToast('Data madrasah disimpan','success'); refresh(); return;
+    }
     if (form.id) { updateItem('madrasah', form.id, form); showToast('Madrasah diperbarui','success'); }
     else { addItem('madrasah', { ...form, id: generateId() }); showToast('Madrasah ditambahkan','success'); }
     setList(getData().madrasah); setShowModal(false); refresh();
@@ -113,18 +124,33 @@ function MadrasahTab({ refresh, canEdit }) {
     } catch (e) { showToast('Gagal import: ' + e.message,'error'); }
   };
 
+  if (isKamad) return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-3xl">
+      <div className="p-4 border-b"><h3 className="font-semibold">Data Madrasah Saya</h3><p className="text-xs text-gray-500">Isi profil madrasah sendiri.</p></div>
+      <div className="p-4 space-y-3">
+        <div><label className="text-sm">Nama</label><input value={form.nama||''} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div>
+        <div className="grid grid-cols-2 gap-3"><div><label className="text-sm">NSM/NPSN</label><input value={form.nsmNpsn||''} onChange={e=>setForm({...form,nsmNpsn:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div><div><label className="text-sm">Jenjang</label><select value={form.jenjang||'MI'} onChange={e=>setForm({...form,jenjang:e.target.value})} className="w-full px-3 py-2 border rounded-lg">{JENJANG.map(j=><option key={j}>{j}</option>)}</select></div></div>
+        <div><label className="text-sm">Alamat</label><input value={form.alamat||''} onChange={e=>setForm({...form,alamat:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div>
+        <div><label className="text-sm">Kepala Madrasah</label><input value={form.kepalaMadrasah||''} onChange={e=>setForm({...form,kepalaMadrasah:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div>
+        <div className="grid grid-cols-2 gap-3"><div><label className="text-sm">Kecamatan</label><input value={form.kecamatan||''} onChange={e=>setForm({...form,kecamatan:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div><div><label className="text-sm">Pengawas</label><input value={form.pengawas||''} onChange={e=>setForm({...form,pengawas:e.target.value})} className="w-full px-3 py-2 border rounded-lg"/></div></div>
+      </div>
+      <div className="p-4 border-t"><button onClick={save} className="px-5 py-2 bg-[#102a4d] text-white rounded-lg flex gap-2"><Save className="w-4 h-4"/>Simpan</button></div>
+    </div>
+  );
   return (
     <div className="space-y-4">
+      {!isKamad && <>
       <div className="flex gap-3 flex-wrap items-center">
         <div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari madrasah..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
         {canEdit && <TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} />}
         {canEdit && <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>}
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NSM/NPSN</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Kecamatan</th><th className="py-3 px-4">Kepala</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(m => (<tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{m.nama}</td><td className="py-2.5 px-4 text-xs">{m.nsmNpsn}</td><td className="py-2.5 px-4 text-xs">{m.jenjang}</td><td className="py-2.5 px-4 text-xs">{m.kecamatan}</td><td className="py-2.5 px-4 text-xs text-gray-500">{m.kepalaMadrasah}</td><td className="py-2.5 px-4">{canEdit && <div className="flex gap-1"><button onClick={()=>openEdit(m)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(m.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div>}</td></tr>))}</tbody></table></div></div>
+      </>}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className={isKamad ? '' : 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{form.id?'Edit':'Tambah'} Madrasah</h3><button onClick={()=>setShowModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button></div>
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{isKamad ? 'Data Madrasah Saya' : `${form.id?'Edit':'Tambah'} Madrasah`}</h3>{!isKamad && <button onClick={()=>setShowModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button>}</div>
             <div className="p-4 space-y-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nama</label><input value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
               <div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">NSM/NPSN</label><input value={form.nsmNpsn} onChange={e=>setForm({...form,nsmNpsn:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Jenjang</label><select value={form.jenjang} onChange={e=>setForm({...form,jenjang:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">{JENJANG.map(j=><option key={j}>{j}</option>)}</select></div></div>
@@ -132,7 +158,7 @@ function MadrasahTab({ refresh, canEdit }) {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Kepala Madrasah</label><input value={form.kepalaMadrasah} onChange={e=>setForm({...form,kepalaMadrasah:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
               <div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label><input value={form.kecamatan} onChange={e=>setForm({...form,kecamatan:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Pengawas</label><input value={form.pengawas} onChange={e=>setForm({...form,pengawas:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div>
             </div>
-            <div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button><button onClick={()=>setShowModal(false)} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button></div>
+            <div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button>{!isKamad && <button onClick={()=>setShowModal(false)} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button>}</div>
           </div>
         </div>
       )}
@@ -377,9 +403,9 @@ function MuridTab({ refresh, canEdit }) {
                 <ol className="list-decimal list-inside space-y-0.5">
                   <li>Pilih <b>Madrasah</b> & <b>Kelas</b> dari filter di atas (semua baris akan masuk ke kelas tersebut).</li>
                   <li>Tempel data dari Excel/spreadsheet, satu murid per baris.</li>
-                  <li>Format kolom: <code>Nama [TAB] NIS [TAB] NISN [TAB] L/P</code> — pemisah bisa TAB, koma, atau titik koma.</li>
+                  <li>Format kolom: <code>Nama [TAB] NIS [TAB] NISN [TAB] L/P</code> â€” pemisah bisa TAB, koma, atau titik koma.</li>
                 </ol>
-                <p className="mt-2"><b>Madrasah:</b> {madrasahList.find(m=>m.id===filterMadrasah)?.nama || <span className="text-red-600">belum dipilih</span>} • <b>Kelas:</b> {kelasList.find(k=>k.id===filterKelas)?.nama || <span className="text-red-600">belum dipilih</span>}</p>
+                <p className="mt-2"><b>Madrasah:</b> {madrasahList.find(m=>m.id===filterMadrasah)?.nama || <span className="text-red-600">belum dipilih</span>} â€¢ <b>Kelas:</b> {kelasList.find(k=>k.id===filterKelas)?.nama || <span className="text-red-600">belum dipilih</span>}</p>
               </div>
               <textarea rows={12} value={importText} onChange={e=>setImportText(e.target.value)} placeholder={'Ahmad Fauzi\t12345\t9876543210\tL\nSiti Aminah\t12346\t9876543211\tP\n...'} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-[#102a4d] outline-none"/>
             </div>
@@ -418,7 +444,7 @@ function IndikatorTab({ refresh, canEdit }) {
         <div key={pc.id} className="border border-gray-200 rounded-lg overflow-hidden">
           <button onClick={() => setExpanded(expanded === pc.id ? null : pc.id)} className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition">
             <div className="flex items-center gap-3"><Heart className="w-5 h-5 text-red-500" fill="currentColor" /><span className="font-semibold text-gray-800">{pc.nama}</span><span className="text-xs text-gray-500">({pc.indikator.length} indikator)</span></div>
-            <span className="text-gray-400">{expanded === pc.id ? '▲' : '▼'}</span>
+            <span className="text-gray-400">{expanded === pc.id ? 'â–²' : 'â–¼'}</span>
           </button>
           {expanded === pc.id && (
             <div className="p-4 space-y-3">
@@ -445,5 +471,3 @@ function IndikatorRow({ ind, pcId, onEdit, onDelete, canEdit }) {
     </div>
   );
 }
-
-
