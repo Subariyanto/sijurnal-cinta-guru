@@ -136,7 +136,7 @@ export default function ObservasiKarakter() {
 
   let filtered = list;
   if (user.role === 'guru') filtered = filtered.filter(o => o.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') filtered = filtered.filter(o => o.madrasahId === user.madrasahId);
+  else if (user.role === 'kamad') filtered = filtered.filter(o => o.madrasahId === user.madrasahId);
   if (search) filtered = filtered.filter(o => (o.muridNama || '').toLowerCase().includes(search.toLowerCase()));
   if (filterKelas) filtered = filtered.filter(o => o.kelasId === filterKelas);
   if (filterPancaCinta) filtered = filtered.filter(o => o.pancaCinta === filterPancaCinta);
@@ -386,7 +386,7 @@ export default function ObservasiKarakter() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Kelas</label>
               <select value={perKelasKelas} onChange={e => { setPerKelasKelas(e.target.value); setPerKelasForm({}); }} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">
                 <option value="">-- Pilih Kelas --</option>
-                {kelasList.filter(k => { if (user.role === 'kepala_madrasah') return k.madrasahId === user.madrasahId; return true; }).map(k => <option key={k.id} value={k.id}>{k.nama} ({k.jenjang || ''})</option>)}
+                {kelasList.filter(k => { if (user.role === 'kamad') return k.madrasahId === user.madrasahId; return true; }).map(k => <option key={k.id} value={k.id}>{k.nama} ({k.jenjang || ''})</option>)}
               </select>
             </div>
             <div>
@@ -461,7 +461,7 @@ export default function ObservasiKarakter() {
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 max-w-xs"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" placeholder="Cari nama murid..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" /></div>
-        <select value={filterKelas} onChange={e => setFilterKelas(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Semua Kelas</option>{kelasList.filter(k => { if (user.role === 'kepala_madrasah') return k.madrasahId === user.madrasahId; return true; }).map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}</select>
+        <select value={filterKelas} onChange={e => setFilterKelas(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Semua Kelas</option>{kelasList.filter(k => { if (user.role === 'kamad') return k.madrasahId === user.madrasahId; return true; }).map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}</select>
         <select value={filterPancaCinta} onChange={e => setFilterPancaCinta(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Semua Panca Cinta</option>{NILAI_PANCA_CINTA.map(p => <option key={p} value={p}>{p}</option>)}</select>
         <div className="flex-1" />
         <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4" /> Tambah Observasi</button>
@@ -638,7 +638,7 @@ export default function ObservasiKarakter() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">Murid</label>
                     <select value={form.muridId || ''} onChange={e => onMuridSelect(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">
                       <option value="">-- Pilih Murid --</option>
-                      {muridList.filter(m => { if (user.role === 'kepala_madrasah') return m.madrasahId === user.madrasahId; return true; }).map(m => <option key={m.id} value={m.id}>{m.nama} ({m.nisn || '-'})</option>)}
+                      {muridList.filter(m => { if (user.role === 'kamad') return m.madrasahId === user.madrasahId; return true; }).map(m => <option key={m.id} value={m.id}>{m.nama} ({m.nisn || '-'})</option>)}
                     </select>
                   </div>
                   <div>

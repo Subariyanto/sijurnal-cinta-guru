@@ -1,10 +1,9 @@
-﻿// ============================================================
+// ============================================================
 // SiJurnal Cinta Guru - LocalStorage Data Layer
 // ============================================================
-const APP_KEY = 'sijurnal_cinta_guru_v1';
 
 export const JENJANG = ['RA', 'MI', 'MTs', 'MA'];
-export const ROLE_LIST = ['admin', 'guru', 'kepala_madrasah', 'pengawas', 'operator'];
+export const ROLE_LIST = ['admin', 'guru', 'kamad', 'pengawas', 'operator'];
 export const NILAI_PANCA_CINTA = [
   'Cinta Allah dan Rasul',
   'Cinta Ilmu',
@@ -130,79 +129,69 @@ export function getKategoriSkor(n) {
   return 'Perlu Pendampingan';
 }
 
-function loadAll() {
-  try {
-    const raw = localStorage.getItem(APP_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return {};
-}
+// Firestore-backed compatibility adapter. Existing pages retain synchronous reads;
+// onSnapshot keeps the in-memory cache current and writes are optimistic/async.
+import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore';
+import { db } from './firebase';
 
-function saveAll(data) {
-  localStorage.setItem(APP_KEY, JSON.stringify(data));
-}
+const COLLECTIONS = ['pengguna','madrasah','guru','kelas','indikatorPancaCinta','rencanaKBC','jurnalHarian','eviden','observasiSiswa','validasi','pengaturan','pembiasaanHarian','jurnalRefleksiMapel','observasiKarakter','cekTumbuhCintaAllah','cekTumbuhCintaIlmu','cekTumbuhCintaLingkungan','cekTumbuhCintaDiri','cekTumbuhCintaSesama','cekTumbuhCintaTanahAir','instrumenKarakter','murid','kodeAktivasi'];
+const cache = Object.fromEntries(COLLECTIONS.map(k => [k, k === 'pengaturan' ? {} : []]));
+let profile = null;
+let unsubscribers = [];
+let listeners = new Set();
 
-export function getData() {
-  const d = loadAll();
-  return {
-    pengguna: d.pengguna || [],
-    madrasah: d.madrasah || [],
-    guru: d.guru || [],
-    kelas: d.kelas || [],
-    indikatorPancaCinta: d.indikatorPancaCinta || [],
-    rencanaKBC: d.rencanaKBC || [],
-    jurnalHarian: d.jurnalHarian || [],
-    eviden: d.eviden || [],
-    observasiSiswa: d.observasiSiswa || [],
-    validasi: d.validasi || [],
-    pengaturan: d.pengaturan || {},
-    pembiasaanHarian: d.pembiasaanHarian || [],
-    jurnalRefleksiMapel: d.jurnalRefleksiMapel || [],
-    observasiKarakter: d.observasiKarakter || [],
-    cekTumbuhCintaAllah: d.cekTumbuhCintaAllah || [],
-    cekTumbuhCintaIlmu: d.cekTumbuhCintaIlmu || [],
-    cekTumbuhCintaLingkungan: d.cekTumbuhCintaLingkungan || [],
-    cekTumbuhCintaDiri: d.cekTumbuhCintaDiri || [],
-    cekTumbuhCintaSesama: d.cekTumbuhCintaSesama || [],
-    cekTumbuhCintaTanahAir: d.cekTumbuhCintaTanahAir || [],
-    instrumenKarakter: d.instrumenKarakter || [],
-    murid: d.murid || [],
-    kodeAktivasi: d.kodeAktivasi || [],
-  };
+function emit() { listeners.forEach(fn => fn(getData())); }
+function report(error) { console.error('Firestore operation failed', error); window.dispatchEvent(new CustomEvent('firestore-error', { detail: error })); }
+function collectionQuery(key) {
+  const ref = collection(db, key === 'pengguna' ? 'users' : key);
+  if (key === 'madrasah' || key === 'pengguna' || profile.role === 'admin') return query(ref);
+  if (profile.role === 'guru') return query(ref, where('ownerId', '==', profile.uid || profile.id));
+  if (profile.role === 'kamad') return query(ref, where('madrasahId', '==', profile.madrasahId));
+  return query(ref, where('madrasahId', 'in', (profile.madrasahBinaanIds || []).slice(0, 30).length ? profile.madrasahBinaanIds.slice(0, 30) : ['__none__']));
 }
-
-export function setData(key, val) {
-  const d = loadAll();
-  d[key] = val;
-  saveAll(d);
+export function connectStore(user) {
+  unsubscribers.forEach(fn => fn()); unsubscribers = []; profile = user;
+  if (!user) return;
+  COLLECTIONS.forEach(key => {
+    // users are admin-only; own profile already comes from AuthContext.
+    if (key === 'pengguna' && user.role !== 'admin') { cache[key] = [user]; return; }
+    unsubscribers.push(onSnapshot(collectionQuery(key), snap => {
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      cache[key] = key === 'pengaturan' ? (rows[0] || {}) : rows;
+      emit();
+    }, report));
+  });
 }
-
+export function subscribeStore(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+export function getData() { return { ...cache }; }
+function scoped(item) {
+  if (!profile) throw new Error('Pengguna belum login');
+  return { ...item, ownerId: item.ownerId || profile.uid || profile.id, madrasahId: item.madrasahId || profile.madrasahId, updatedAt: serverTimestamp() };
+}
+function remoteKey(key) { return key === 'pengguna' ? 'users' : key; }
+export function setData(key, val) { return updateCollection(key, Array.isArray(val) ? val : [{ ...val, id: val.id || 'default' }]); }
 export function addItem(key, item) {
-  const d = loadAll();
-  if (!d[key]) d[key] = [];
-  d[key].push(item);
-  saveAll(d);
+  const id = item.id || generateId(); const row = { ...item, id };
+  cache[key] = [...(cache[key] || []), row]; emit();
+  const payload = key === 'madrasah' || key === 'pengguna' ? { ...row, updatedAt: serverTimestamp() } : scoped(row);
+  delete payload.id;
+  return setDoc(doc(db, remoteKey(key), id), { ...payload, createdAt: serverTimestamp() }).catch(report);
 }
-
 export function updateItem(key, id, patch) {
-  const d = loadAll();
-  if (!d[key]) return;
-  d[key] = d[key].map(x => x.id === id ? { ...x, ...patch } : x);
-  saveAll(d);
+  cache[key] = (cache[key] || []).map(x => x.id === id ? { ...x, ...patch } : x); emit();
+  const payload = { ...patch, updatedAt: serverTimestamp() }; delete payload.id; delete payload.ownerId; delete payload.madrasahId;
+  return setDoc(doc(db, remoteKey(key), id), payload, { merge: true }).catch(report);
 }
-
 export function deleteItem(key, id) {
-  const d = loadAll();
-  if (!d[key]) return;
-  d[key] = d[key].filter(x => x.id !== id);
-  saveAll(d);
+  cache[key] = (cache[key] || []).filter(x => x.id !== id); emit();
+  return deleteDoc(doc(db, remoteKey(key), id)).catch(report);
 }
-
-export function updateCollection(key, arr) {
-  const d = loadAll();
-  d[key] = arr;
-  saveAll(d);
+export async function updateCollection(key, arr) {
+  const rows = Array.isArray(arr) ? arr : []; cache[key] = key === 'pengaturan' ? (rows[0] || {}) : rows; emit();
+  const batch = writeBatch(db); const existing = await new Promise((resolve, reject) => {
+    const unsub = onSnapshot(collectionQuery(key), s => { unsub(); resolve(s.docs); }, reject);
+  });
+  existing.forEach(d => batch.delete(d.ref));
+  rows.forEach(item => { const id = item.id || generateId(); const payload = key === 'madrasah' || key === 'pengguna' ? { ...item } : scoped(item); delete payload.id; batch.set(doc(db, remoteKey(key), id), { ...payload, updatedAt: serverTimestamp() }); });
+  return batch.commit().catch(report);
 }
-
-
-

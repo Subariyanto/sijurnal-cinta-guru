@@ -16,11 +16,11 @@ const allMenus = [
   { to: '/observasi-karakter', label: 'Observasi Karakter Murid', icon: Sparkles, roles: null },
   { to: '/eviden', label: 'Eviden Digital', icon: Camera, roles: null },
   { to: '/observasi', label: 'Observasi Siswa', icon: Eye, roles: null },
-  { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kepala_madrasah', 'pengawas', 'admin'] },
+  { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kamad', 'pengawas', 'admin'] },
   { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
   { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers, roles: null },
   { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
-  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kepala_madrasah', 'operator', 'pengawas'] },
+  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'operator', 'pengawas'] },
   { to: '/panduan', label: 'Panduan Penggunaan', icon: HelpCircle, roles: null },
 ];
 

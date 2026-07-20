@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function role(r) { return signedIn() && me().role == r; }
+    function validRole(r) { return r in ['admin', 'pengawas', 'kamad', 'guru']; }
+    function canAccess(d) {
+      return role('admin')
+        || (role('guru') && d.ownerId == request.auth.uid)
+        || (role('kamad') && d.madrasahId == me().madrasahId)
+        || (role('pengawas') && d.madrasahId in me().madrasahBinaanIds);
+    }
+    function tenantFieldsValid(d) {
+      return d.ownerId is string && d.madrasahId is string;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || role('admin'));
+      // User provisioning + role/tenant assignment is admin-only.
+      allow create, delete: if role('admin') && validRole(request.resource.data.role);
+      allow update: if role('admin') && validRole(request.resource.data.role)
+        || (request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['nama', 'photoURL', 'updatedAt'])
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.madrasahId == resource.data.madrasahId
+          && request.resource.data.madrasahBinaanIds == resource.data.madrasahBinaanIds);
+    }
+
+    match /madrasah/{id} {
+      allow read: if role('admin') || (role('kamad') && id == me().madrasahId)
+        || (role('guru') && id == me().madrasahId)
+        || (role('pengawas') && id in me().madrasahBinaanIds);
+      allow write: if role('admin');
+    }
+
+    // Every tenant document must carry immutable ownerId + madrasahId.
+    match /{collectionName}/{documentId} {
+      allow read, delete: if signedIn() && canAccess(resource.data);
+      allow create: if signedIn() && tenantFieldsValid(request.resource.data)
+        && canAccess(request.resource.data);
+      allow update: if signedIn() && tenantFieldsValid(request.resource.data)
+        && canAccess(resource.data) && canAccess(request.resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.madrasahId == resource.data.madrasahId;
+    }
+  }
+}

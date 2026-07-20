@@ -1,5 +1,3 @@
-const { generateId } = require('./store');
-// (this is actually used via import, no require — it's a helper)
 
 function id() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -30,7 +28,7 @@ export function createSeedData() {
     { id: 'u1', username: 'admin', password: 'admin123', role: 'admin', nama: 'Administrator', guruId: null, madrasahId: null },
     { id: 'u2', username: 'guru1', password: 'guru123', role: 'guru', nama: 'Siti Nurhalimah, S.Pd', guruId: 'g1', madrasahId: 'mad1' },
     { id: 'u3', username: 'guru2', password: 'guru123', role: 'guru', nama: 'Muhammad Rizky, S.Pd', guruId: 'g2', madrasahId: 'mad2' },
-    { id: 'u4', username: 'kepala', password: 'kepala123', role: 'kepala_madrasah', nama: 'Drs. Ahmad Fauzi, M.Pd', guruId: null, madrasahId: 'mad1' },
+    { id: 'u4', username: 'kepala', password: 'kepala123', role: 'kamad', nama: 'Drs. Ahmad Fauzi, M.Pd', guruId: null, madrasahId: 'mad1' },
     { id: 'u5', username: 'pengawas', password: 'pengawas123', role: 'pengawas', nama: 'Subariyanto, S.Pd, M.Pd.I', guruId: null, madrasahId: null },
     { id: 'u6', username: 'operator', password: 'operator123', role: 'operator', nama: 'Operator Madrasah', guruId: null, madrasahId: 'mad1' },
   ];

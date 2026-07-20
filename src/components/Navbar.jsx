@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import {
@@ -35,7 +35,7 @@ const groups = [
   {
     label: 'Monitoring & Laporan', icon: BarChart3,
     items: [
-      { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kepala_madrasah', 'pengawas', 'admin'] },
+      { to: '/validasi', label: 'Validasi', icon: CheckCircle, roles: ['kamad', 'pengawas', 'admin'] },
       { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3 },
       { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
     ],
@@ -44,7 +44,7 @@ const groups = [
     label: 'Administrasi', icon: SlidersHorizontal,
     items: [
       { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator', 'pengawas'] },
-      { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kepala_madrasah', 'operator', 'pengawas'] },
+      { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'operator', 'pengawas'] },
       { to: '/panduan', label: 'Panduan Penggunaan', icon: HelpCircle },
     ],
   },

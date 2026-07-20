@@ -17,7 +17,7 @@ function DashboardUmum({ user }) {
   const d = getData();
   let jurnalList = d.jurnalHarian;
   if (user.role === 'guru') jurnalList = d.jurnalHarian.filter(j => j.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') jurnalList = d.jurnalHarian.filter(j => j.madrasahId === user.madrasahId);
+  else if (user.role === 'kamad') jurnalList = d.jurnalHarian.filter(j => j.madrasahId === user.madrasahId);
 
   const stats = [
     { icon: Users, label: 'Total Guru', value: d.guru.length, color: 'bg-blue-500' },

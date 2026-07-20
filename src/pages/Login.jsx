@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { getData, addItem, generateId } from '../lib/store';
-import { isKodeValid, consumeKodeAktivasi, isKodeServerMode } from '../lib/aktivasi';
 import { LogIn, Eye, EyeOff, UserPlus, ShoppingCart, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
 
 const WA_YANTO = '6282330647698'; // Subariyanto - Pokjawas Jember
@@ -43,65 +41,22 @@ export default function Login() {
     setTimeout(() => setToast({ msg: '', type: 'success' }), 2500);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const u = login(username.trim(), password);
-    if (!u) setError('Username atau password salah');
+    setError('');
+    setSubmitting(true);
+    try {
+      await login(username.trim(), password);
+    } catch {
+      setError('Email atau password salah, atau profil belum diaktifkan admin.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    const nama = regNama.trim();
-    const uname = regUsername.trim().toLowerCase();
-    const kode = regKode.trim().toUpperCase();
-    if (!kode) { setError('Kode aktivasi wajib diisi. Hubungi admin untuk mendapatkannya.'); return; }
-    if (!nama || !uname || !regPassword) { setError('Nama, username, dan password wajib diisi'); return; }
-    if (uname.length < 3) { setError('Username minimal 3 karakter'); return; }
-    if (regPassword.length < 6) { setError('Password minimal 6 karakter'); return; }
-    if (regPassword !== regPassword2) { setError('Konfirmasi password tidak cocok'); return; }
-
-    setSubmitting(true);
-    try {
-      // 1. Validasi kode aktivasi (server atau local)
-      const cek = await isKodeValid(kode);
-      if (!cek.ok) { setError(cek.reason); return; }
-
-      // 2. Validasi username unik (local)
-      const data = getData();
-      if (data.pengguna.some((p) => p.username.toLowerCase() === uname)) {
-        setError('Username sudah dipakai. Silakan pilih yang lain.');
-        return;
-      }
-
-      // 3. Buat user dengan role dari kode aktivasi (local)
-      const newUser = {
-        id: generateId(),
-        username: uname,
-        password: regPassword,
-        role: cek.kode.role,
-        nama,
-        guruId: null,
-        madrasahId: null,
-        kodeAktivasi: cek.kode.kode,
-      };
-
-      // 4. Claim kode (atomic di server, instant di local)
-      const claim = await consumeKodeAktivasi(kode, { userId: newUser.id, username: uname });
-      if (!claim.ok) { setError(claim.reason || 'Gagal pakai kode'); return; }
-
-      addItem('pengguna', newUser);
-
-      showToast('Pendaftaran berhasil. Silakan login.', 'success');
-      setUsername(uname);
-      setPassword('');
-      setRegNama(''); setRegUsername(''); setRegPassword(''); setRegPassword2(''); setRegKode('');
-      setMode('login');
-    } catch (err) {
-      setError('Terjadi kesalahan: ' + (err.message || err));
-    } finally {
-      setSubmitting(false);
-    }
+    setError('Pendaftaran mandiri dinonaktifkan. Hubungi admin untuk pembuatan akun dan penetapan role.');
   };
 
   return (
@@ -121,14 +76,14 @@ export default function Login() {
             <h2 className="text-lg font-semibold text-gray-800">Masuk</h2>
             {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setError(''); }}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"
                 required
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             <div className="relative">
@@ -199,9 +154,7 @@ export default function Login() {
                 >
                   Minta kode di sini
                 </a>
-                {isKodeServerMode() && (
-                  <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-semibold">✓ Server</span>
-                )}
+
               </span>
             </div>
 
@@ -233,7 +186,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 type="text"
                 value={regUsername}
@@ -241,7 +194,7 @@ export default function Login() {
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"
                 placeholder="minimal 3 karakter, tanpa spasi"
                 required
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             <div>

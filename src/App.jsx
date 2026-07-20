@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import Layout from './components/Layout';
@@ -45,9 +45,9 @@ function AppRoutes() {
         <Route path="jurnal" element={<JurnalHarian />} />
         <Route path="eviden" element={<Eviden />} />
         <Route path="observasi" element={<Observasi />} />
-        <Route path="validasi" element={<ProtectedRoute roles={['kepala_madrasah', 'pengawas', 'admin']}><Validasi /></ProtectedRoute>} />
+        <Route path="validasi" element={<ProtectedRoute roles={['kamad', 'pengawas', 'admin']}><Validasi /></ProtectedRoute>} />
         <Route path="laporan" element={<Laporan />} />
-        <Route path="pengaturan" element={<ProtectedRoute roles={['admin', 'kepala_madrasah', 'operator', 'pengawas']}><Pengaturan /></ProtectedRoute>} />
+        <Route path="pengaturan" element={<ProtectedRoute roles={['admin', 'kamad', 'operator', 'pengawas']}><Pengaturan /></ProtectedRoute>} />
         <Route path="jurnal/:id" element={<DetailJurnal />} />
         <Route path="laporan-pengawas" element={<ProtectedRoute roles={['pengawas', 'admin']}><LaporanPengawas /></ProtectedRoute>} />
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />
@@ -57,7 +57,8 @@ function AppRoutes() {
         <Route path="cek-tumbuh-cinta-ilmu" element={<CekTumbuhCintaIlmu />} />
         <Route path="cek-tumbuh-cinta-lingkungan" element={<CekTumbuhCintaLingkungan />} />
         <Route path="cek-tumbuh-cinta-diri" element={<CekTumbuhCintaDiri />} />
-        <Route path="cek-tumbuh-cinta-sesama" element={<CekTumbuhCintaSesama />} />`r`n        <Route path="cek-tumbuh-cinta-tanah-air" element={<CekTumbuhCintaTanahAir />} />
+        <Route path="cek-tumbuh-cinta-sesama" element={<CekTumbuhCintaSesama />} />
+        <Route path="cek-tumbuh-cinta-tanah-air" element={<CekTumbuhCintaTanahAir />} />
         <Route path="rekap-instrumen" element={<RekapInstrumen />} />
         <Route path="panduan" element={<Panduan />} />
       </Route>
@@ -74,10 +75,3 @@ export default function App() {
     </HashRouter>
   );
 }
-
-
-
-
-
-
-

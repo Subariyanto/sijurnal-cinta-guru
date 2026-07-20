@@ -24,7 +24,7 @@ export default function Observasi() {
 
   let filtered = list;
   if (user.role === 'guru') filtered = filtered.filter(o => o.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') {
+  else if (user.role === 'kamad') {
     const myKelas = kelasList.filter(k => k.madrasahId === user.madrasahId).map(k => k.id);
     filtered = filtered.filter(o => myKelas.includes(o.kelasId));
   }

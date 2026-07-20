@@ -25,7 +25,7 @@ export default function JurnalHarian() {
 
   let filtered = list;
   if (user.role === 'guru') filtered = filtered.filter(j => j.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
+  else if (user.role === 'kamad') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
   if (filterStatus) filtered = filtered.filter(j => j.status === filterStatus);
   if (search) filtered = filtered.filter(j => `${j.guruNama} ${j.mapel} ${j.materi}`.toLowerCase().includes(search.toLowerCase()));
 

@@ -21,7 +21,7 @@ export default function Eviden() {
   if (user.role === 'guru') {
     const myJurnal = jurnalList.filter(j => j.guruId === user.guruId).map(j => j.id);
     filtered = filtered.filter(e => !e.jurnalId || myJurnal.includes(e.jurnalId));
-  } else if (user.role === 'kepala_madrasah') {
+  } else if (user.role === 'kamad') {
     const mJurnal = jurnalList.filter(j => j.madrasahId === user.madrasahId).map(j => j.id);
     filtered = filtered.filter(e => !e.jurnalId || mJurnal.includes(e.jurnalId));
   }

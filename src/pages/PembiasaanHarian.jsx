@@ -77,7 +77,7 @@ export default function PembiasaanHarian() {
 
   let filtered = list;
   if (user?.role === 'guru') filtered = filtered.filter(j => j.guruId === user.guruId);
-  else if (user?.role === 'kepala_madrasah') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
+  else if (user?.role === 'kamad') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
   if (filterStatus) filtered = filtered.filter(j => j.status === filterStatus);
   if (search) {
     const q = search.toLowerCase();
@@ -661,7 +661,7 @@ export default function PembiasaanHarian() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Madrasah</label>
-                <select value={newJurnal.madrasahId} onChange={(e) => setNewJurnal({ ...newJurnal, madrasahId: e.target.value, kelasId: '' })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" disabled={user?.role === 'guru' || user?.role === 'kepala_madrasah'}>
+                <select value={newJurnal.madrasahId} onChange={(e) => setNewJurnal({ ...newJurnal, madrasahId: e.target.value, kelasId: '' })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" disabled={user?.role === 'guru' || user?.role === 'kamad'}>
                   <option value="">Pilih madrasah...</option>
                   {madrasahList.map(m => (
                     <option key={m.id} value={m.id}>{m.nama}</option>

@@ -40,7 +40,7 @@ export default function Validasi() {
   const [selectedJurnal, setSelectedJurnal] = useState(null);
 
   let filtered = jurnal.filter(j => ['Dikirim','Perlu Revisi','Disetujui'].includes(j.status));
-  if (user.role === 'kepala_madrasah') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
+  if (user.role === 'kamad') filtered = filtered.filter(j => j.madrasahId === user.madrasahId);
   if (search) filtered = filtered.filter(j => `${j.guruNama} ${j.mapel} ${j.materi}`.toLowerCase().includes(search.toLowerCase()));
 
   const existingValidasi = (jurnalId) => validasi.find(v => v.jurnalId === jurnalId);

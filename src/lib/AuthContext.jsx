@@ -1,38 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getData } from './store';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth } from './firebase';
+import { getUserProfile } from './firestore';
+import { connectStore, subscribeStore } from './store';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [, setRevision] = useState(0);
+
+  useEffect(() => subscribeStore(() => setRevision(x => x + 1)), []);
+
+  useEffect(() => onAuthStateChanged(auth, async (firebaseUser) => {
     try {
-      const u = sessionStorage.getItem('sijurnal_user');
-      return u ? JSON.parse(u) : null;
-    } catch { return null; }
-  });
+      if (!firebaseUser) { connectStore(null); return setUser(null); }
+      const profile = await getUserProfile(firebaseUser.uid);
+      if (!profile) {
+        await signOut(auth);
+        throw new Error('Profil pengguna belum dibuat oleh admin.');
+      }
+      // Compatibility with existing UI naming.
+      const appUser = { ...profile, uid: firebaseUser.uid, email: firebaseUser.email };
+      setUser(appUser);
+      connectStore(appUser);
+    } catch (error) {
+      console.error('Gagal memuat profil pengguna', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }), []);
 
-  useEffect(() => {
-    if (user) sessionStorage.setItem('sijurnal_user', JSON.stringify(user));
-    else sessionStorage.removeItem('sijurnal_user');
-  }, [user]);
-
-  const login = (username, password) => {
-    const d = getData();
-    const found = d.pengguna.find(u => u.username === username && u.password === password);
-    if (!found) return null;
-    setUser(found);
-    return found;
+  const login = async (email, password) => {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const profile = await getUserProfile(credential.user.uid);
+    if (!profile) {
+      await signOut(auth);
+      throw new Error('Profil pengguna belum dibuat oleh admin.');
+    }
+    return { ...profile, uid: credential.user.uid, email: credential.user.email };
   };
 
-  const logout = () => setUser(null);
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const logout = () => signOut(auth);
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth harus digunakan di dalam AuthProvider');
+  return context;
 }

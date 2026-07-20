@@ -17,7 +17,7 @@ export default function PerencanaanKBC() {
 
   let filtered = list;
   if (user.role === 'guru') filtered = list.filter(r => r.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') filtered = list.filter(r => r.madrasahId === user.madrasahId);
+  else if (user.role === 'kamad') filtered = list.filter(r => r.madrasahId === user.madrasahId);
   if (search) filtered = filtered.filter(r => `${r.guruNama} ${r.mapel} ${r.materiPokok}`.toLowerCase().includes(search.toLowerCase()));
 
   const guruList = getData().guru.filter(g => !user.guruId || g.id === user.guruId);

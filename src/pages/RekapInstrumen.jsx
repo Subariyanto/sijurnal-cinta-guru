@@ -74,27 +74,27 @@ export default function RekapInstrumen() {
   const jurnalHarian = useMemo(() => {
     let l = data.jurnalHarian || [];
     if (user.role === 'guru') l = l.filter(j => j.guruId === user.guruId);
-    else if (user.role === 'kepala_madrasah') l = l.filter(j => j.madrasahId === user.madrasahId);
+    else if (user.role === 'kamad') l = l.filter(j => j.madrasahId === user.madrasahId);
     return l;
   }, [data.jurnalHarian, user]);
 
   const pembiasaanHarian = useMemo(() => {
     let l = data.pembiasaanHarian || [];
     if (user.role === 'guru') l = l.filter(p => p.guruId === user.guruId);
-    else if (user.role === 'kepala_madrasah') l = l.filter(p => p.madrasahId === user.madrasahId);
+    else if (user.role === 'kamad') l = l.filter(p => p.madrasahId === user.madrasahId);
     return l;
   }, [data.pembiasaanHarian, user]);
 
   const observasiKarakter = useMemo(() => {
     let l = data.observasiKarakter || [];
     if (user.role === 'guru') l = l.filter(o => o.guruId === user.guruId);
-    else if (user.role === 'kepala_madrasah') l = l.filter(o => o.madrasahId === user.madrasahId);
+    else if (user.role === 'kamad') l = l.filter(o => o.madrasahId === user.madrasahId);
     return l;
   }, [data.observasiKarakter, user]);
 
   const eviden = useMemo(() => {
     let l = data.eviden || [];
-    if (user.role === 'guru' || user.role === 'kepala_madrasah') {
+    if (user.role === 'guru' || user.role === 'kamad') {
       const myJurnal = jurnalHarian.map(j => j.id);
       l = l.filter(e => !e.jurnalId || myJurnal.includes(e.jurnalId));
     }
@@ -103,7 +103,7 @@ export default function RekapInstrumen() {
 
   const validasi = useMemo(() => {
     let l = data.validasi || [];
-    if (user.role === 'guru' || user.role === 'kepala_madrasah') {
+    if (user.role === 'guru' || user.role === 'kamad') {
       const myJurnal = jurnalHarian.map(j => j.id);
       l = l.filter(v => myJurnal.includes(v.jurnalId));
     }
@@ -807,7 +807,7 @@ export default function RekapInstrumen() {
           <p className="text-sm">Menyetujui,</p>
           <p className="text-sm font-semibold mt-1">Kepala Madrasah</p>
           <div className="h-16"></div>
-          <p className="text-sm font-semibold border-t border-gray-400 pt-1">({user.role === 'kepala_madrasah' ? user.nama : '______________________'})</p>
+          <p className="text-sm font-semibold border-t border-gray-400 pt-1">({user.role === 'kamad' ? user.nama : '______________________'})</p>
         </div>
         <div className="text-center">
           <p className="text-sm">Dibuat oleh,</p>

@@ -28,7 +28,7 @@ export default function Laporan() {
 
   let jurnalList = data.jurnalHarian;
   if (user.role === 'guru') jurnalList = jurnalList.filter(j => j.guruId === user.guruId);
-  else if (user.role === 'kepala_madrasah') jurnalList = jurnalList.filter(j => j.madrasahId === user.madrasahId);
+  else if (user.role === 'kamad') jurnalList = jurnalList.filter(j => j.madrasahId === user.madrasahId);
 
   const guruStats = useMemo(() => {
     const stats = {};
@@ -58,7 +58,7 @@ export default function Laporan() {
   const observasiList = useMemo(() => {
     let l = data.observasiSiswa;
     if (user.role === 'guru') l = l.filter(o => o.guruId === user.guruId);
-    else if (user.role === 'kepala_madrasah') {
+    else if (user.role === 'kamad') {
       const myKelas = data.kelas.filter(k => k.madrasahId === user.madrasahId).map(k => k.id);
       l = l.filter(o => myKelas.includes(o.kelasId));
     }
