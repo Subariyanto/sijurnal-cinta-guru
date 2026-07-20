@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -12,12 +12,16 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [, setRevision] = useState(0);
+  const registrationInProgress = useRef(false);
 
   useEffect(() => subscribeStore(() => setRevision(x => x + 1)), []);
 
   useEffect(() => onAuthStateChanged(auth, async (firebaseUser) => {
     try {
       if (!firebaseUser) { connectStore(null); return setUser(null); }
+      // createUserWithEmailAndPassword fires this observer before the profile batch
+      // is committed. Registration itself will finish the profile setup.
+      if (registrationInProgress.current) return;
       const profile = await getUserProfile(firebaseUser.uid);
       if (!profile) {
         await signOut(auth);
@@ -40,7 +44,7 @@ export function AuthProvider({ children }) {
   }), []);
 
   const login = async (email, password) => {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
     const profile = await getUserProfile(credential.user.uid);
     if (!profile) {
       await signOut(auth);
@@ -54,14 +58,24 @@ export function AuthProvider({ children }) {
   };
 
   const register = async ({ email, password, nama, code, role, madrasahId, madrasahBinaanIds }) => {
-    const credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-    const uid = credential.user.uid; const codeId = activationCodeId(code);
+    registrationInProgress.current = true;
+    let credential;
     try {
+      credential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+      const uid = credential.user.uid; const codeId = activationCodeId(code);
       const batch = writeBatch(db);
       batch.set(doc(db, 'users', uid), { email: credential.user.email, nama: nama.trim(), role, madrasahId: madrasahId.trim(), madrasahBinaanIds, aktif:true, activationCodeId:codeId, createdAt:serverTimestamp(), updatedAt:serverTimestamp() });
       batch.update(doc(db, 'activationCodes', codeId), { used:true, usedBy:uid, usedAt:serverTimestamp() });
-      await batch.commit(); return credential.user;
-    } catch (error) { await deleteUser(credential.user).catch(() => {}); throw error; }
+      await batch.commit();
+      // End registration in a predictable signed-out state; user then logs in normally.
+      await signOut(auth);
+      return credential.user;
+    } catch (error) {
+      if (credential?.user) await deleteUser(credential.user).catch(() => {});
+      throw error;
+    } finally {
+      registrationInProgress.current = false;
+    }
   };
   const logout = () => signOut(auth);
   const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading]);
