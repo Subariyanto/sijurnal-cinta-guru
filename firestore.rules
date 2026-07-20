@@ -52,14 +52,55 @@ service cloud.firestore {
         && getAfter(userPath(request.auth.uid)).data.activationCodeId == codeId);
     }
 
+    // Master Data rules must stay before the wildcard. Guru has no Master Data access.
     match /madrasah/{id} {
-      allow read: if role('admin') || (role('kamad') && id == me().madrasahId) || (role('guru') && id == me().madrasahId) || (role('pengawas') && id in me().madrasahBinaanIds);
+      allow read: if role('admin') || (role('kamad') && id == me().madrasahId)
+        || (role('pengawas') && id in me().madrasahBinaanIds);
+      allow write: if role('admin');
+    }
+    match /guru/{id} {
+      allow read: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId)
+        || (role('pengawas') && resource.data.madrasahId in me().madrasahBinaanIds);
+      allow create: if role('admin') || (role('kamad') && tenantFieldsValid(request.resource.data)
+        && request.resource.data.madrasahId == me().madrasahId);
+      allow update: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId
+        && request.resource.data.madrasahId == me().madrasahId
+        && request.resource.data.ownerId == resource.data.ownerId);
+      allow delete: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId);
+    }
+    match /kelas/{id} {
+      allow read: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId)
+        || (role('pengawas') && resource.data.madrasahId in me().madrasahBinaanIds);
+      allow create: if role('admin') || (role('kamad') && tenantFieldsValid(request.resource.data)
+        && request.resource.data.madrasahId == me().madrasahId);
+      allow update: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId
+        && request.resource.data.madrasahId == me().madrasahId
+        && request.resource.data.ownerId == resource.data.ownerId);
+      allow delete: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId);
+    }
+    match /murid/{id} {
+      allow read: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId)
+        || (role('pengawas') && resource.data.madrasahId in me().madrasahBinaanIds);
+      allow create: if role('admin') || (role('kamad') && tenantFieldsValid(request.resource.data)
+        && request.resource.data.madrasahId == me().madrasahId);
+      allow update: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId
+        && request.resource.data.madrasahId == me().madrasahId
+        && request.resource.data.ownerId == resource.data.ownerId);
+      allow delete: if role('admin') || (role('kamad') && resource.data.madrasahId == me().madrasahId);
+    }
+    match /indikatorPancaCinta/{id} {
+      allow read: if role('admin') || role('kamad') || role('pengawas');
       allow write: if role('admin');
     }
     match /{collectionName}/{documentId} {
-      allow read, delete: if signedIn() && canAccess(resource.data);
-      allow create: if signedIn() && tenantFieldsValid(request.resource.data) && canAccess(request.resource.data);
-      allow update: if signedIn() && tenantFieldsValid(request.resource.data) && canAccess(resource.data) && canAccess(request.resource.data)
+      // Named Master Data matches are OR'ed with wildcards by Firestore. Exclude
+      // them here so the general record RBAC cannot accidentally grant access.
+      allow read, delete: if !(collectionName in ['madrasah','guru','kelas','murid','indikatorPancaCinta'])
+        && signedIn() && canAccess(resource.data);
+      allow create: if !(collectionName in ['madrasah','guru','kelas','murid','indikatorPancaCinta'])
+        && signedIn() && tenantFieldsValid(request.resource.data) && canAccess(request.resource.data);
+      allow update: if !(collectionName in ['madrasah','guru','kelas','murid','indikatorPancaCinta'])
+        && signedIn() && tenantFieldsValid(request.resource.data) && canAccess(resource.data) && canAccess(request.resource.data)
         && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.madrasahId == resource.data.madrasahId;
     }
   }

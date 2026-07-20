@@ -131,7 +131,7 @@ export function getKategoriSkor(n) {
 
 // Firestore-backed compatibility adapter. Existing pages retain synchronous reads;
 // onSnapshot keeps the in-memory cache current and writes are optimistic/async.
-import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore';
+import { collection, deleteDoc, doc, documentId, onSnapshot, query, serverTimestamp, setDoc, where, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
 const COLLECTIONS = ['pengguna','madrasah','guru','kelas','indikatorPancaCinta','rencanaKBC','jurnalHarian','eviden','observasiSiswa','validasi','pengaturan','pembiasaanHarian','jurnalRefleksiMapel','observasiKarakter','cekTumbuhCintaAllah','cekTumbuhCintaIlmu','cekTumbuhCintaLingkungan','cekTumbuhCintaDiri','cekTumbuhCintaSesama','cekTumbuhCintaTanahAir','instrumenKarakter','murid','kodeAktivasi'];
@@ -144,7 +144,12 @@ function emit() { listeners.forEach(fn => fn(getData())); }
 function report(error) { console.error('Firestore operation failed', error); window.dispatchEvent(new CustomEvent('firestore-error', { detail: error })); }
 function collectionQuery(key) {
   const ref = collection(db, key === 'pengguna' ? 'users' : key);
-  if (key === 'madrasah' || key === 'pengguna' || profile.role === 'admin') return query(ref);
+  if (key === 'pengguna' || profile.role === 'admin') return query(ref);
+  if (key === 'madrasah') {
+    const ids = profile.role === 'kamad' ? [profile.madrasahId] : (profile.madrasahBinaanIds || []).slice(0, 30);
+    return query(ref, where(documentId(), 'in', ids.length ? ids : ['__none__']));
+  }
+  if (key === 'indikatorPancaCinta') return query(ref);
   if (profile.role === 'guru') return query(ref, where('ownerId', '==', profile.uid || profile.id));
   if (profile.role === 'kamad') return query(ref, where('madrasahId', '==', profile.madrasahId));
   return query(ref, where('madrasahId', 'in', (profile.madrasahBinaanIds || []).slice(0, 30).length ? profile.madrasahBinaanIds.slice(0, 30) : ['__none__']));
@@ -155,6 +160,8 @@ export function connectStore(user) {
   COLLECTIONS.forEach(key => {
     // users are admin-only; own profile already comes from AuthContext.
     if (key === 'pengguna' && user.role !== 'admin') { cache[key] = [user]; return; }
+    // Guru has no Master Data access. Avoid denied listeners and stale cache leaks.
+    if (user.role === 'guru' && ['madrasah','guru','kelas','murid','indikatorPancaCinta'].includes(key)) { cache[key] = []; return; }
     unsubscribers.push(onSnapshot(collectionQuery(key), snap => {
       const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       cache[key] = key === 'pengaturan' ? (rows[0] || {}) : rows;

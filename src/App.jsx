@@ -40,14 +40,14 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
-        <Route path="master-data" element={<ProtectedRoute roles={['admin', 'operator', 'pengawas']}><MasterData /></ProtectedRoute>} />
+        <Route path="master-data" element={<ProtectedRoute roles={['admin', 'kamad', 'pengawas']}><MasterData /></ProtectedRoute>} />
         <Route path="perencanaan" element={<PerencanaanKBC />} />
         <Route path="jurnal" element={<JurnalHarian />} />
         <Route path="eviden" element={<Eviden />} />
         <Route path="observasi" element={<Observasi />} />
         <Route path="validasi" element={<ProtectedRoute roles={['kamad', 'pengawas', 'admin']}><Validasi /></ProtectedRoute>} />
         <Route path="laporan" element={<Laporan />} />
-        <Route path="pengaturan" element={<ProtectedRoute roles={['admin', 'kamad', 'operator', 'pengawas']}><Pengaturan /></ProtectedRoute>} />
+        <Route path="pengaturan" element={<ProtectedRoute roles={['admin', 'kamad', 'pengawas']}><Pengaturan /></ProtectedRoute>} />
         <Route path="jurnal/:id" element={<DetailJurnal />} />
         <Route path="laporan-pengawas" element={<ProtectedRoute roles={['pengawas', 'admin']}><LaporanPengawas /></ProtectedRoute>} />
         <Route path="pembiasaan-harian" element={<PembiasaanHarian />} />

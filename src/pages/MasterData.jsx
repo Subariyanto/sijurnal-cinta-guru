@@ -3,6 +3,7 @@ import { getData, updateCollection, addItem, updateItem, deleteItem, generateId 
 import { Plus, Search, Edit, Trash2, X, Save, Building2, Users, BookOpen, Heart, GraduationCap, FileDown, Upload, FileText } from 'lucide-react';
 import { JENJANG, NILAI_PANCA_CINTA, ROLE_LIST } from '../lib/store';
 import { downloadCSV, downloadTemplate, parseCSV, readFileAsText } from '../lib/csv';
+import { useAuth } from '../lib/AuthContext';
 
 function useDataRefresher() {
   const [_, setTick] = useState(0);
@@ -31,7 +32,10 @@ function TemplateImportExport({ onTemplate, onImport, onExport }) {
 }
 
 export default function MasterData() {
-  const [tab, setTab] = useState('madrasah');
+  const { user } = useAuth();
+  const [tab, setTab] = useState(user.role === 'kamad' ? 'guru' : 'madrasah');
+  const canEditMadrasah = user.role === 'admin';
+  const canEditTenantData = user.role === 'admin' || user.role === 'kamad';
   const refresh = useDataRefresher();
 
   const tabs = [
@@ -57,16 +61,17 @@ export default function MasterData() {
         ))}
       </div>
 
-      {tab === 'madrasah' && <MadrasahTab refresh={refresh} />}
-      {tab === 'guru' && <GuruTab refresh={refresh} />}
-      {tab === 'kelas' && <KelasTab refresh={refresh} />}
-      {tab === 'murid' && <MuridTab refresh={refresh} />}
-      {tab === 'indikator' && <IndikatorTab refresh={refresh} />}
+      {user.role === 'pengawas' && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">Mode baca saja untuk madrasah binaan.</p>}
+      {tab === 'madrasah' && <MadrasahTab refresh={refresh} canEdit={canEditMadrasah} />}
+      {tab === 'guru' && <GuruTab refresh={refresh} canEdit={canEditTenantData} />}
+      {tab === 'kelas' && <KelasTab refresh={refresh} canEdit={canEditTenantData} />}
+      {tab === 'murid' && <MuridTab refresh={refresh} canEdit={canEditTenantData} />}
+      {tab === 'indikator' && <IndikatorTab refresh={refresh} canEdit={user.role === 'admin'} />}
     </div>
   );
 }
 
-function MadrasahTab({ refresh }) {
+function MadrasahTab({ refresh, canEdit }) {
   const data = getData();
   const [list, setList] = useState(data.madrasah);
   const [search, setSearch] = useState('');
@@ -112,10 +117,10 @@ function MadrasahTab({ refresh }) {
     <div className="space-y-4">
       <div className="flex gap-3 flex-wrap items-center">
         <div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari madrasah..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
-        <TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} />
-        <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>
+        {canEdit && <TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} />}
+        {canEdit && <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>}
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NSM/NPSN</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Kecamatan</th><th className="py-3 px-4">Kepala</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(m => (<tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{m.nama}</td><td className="py-2.5 px-4 text-xs">{m.nsmNpsn}</td><td className="py-2.5 px-4 text-xs">{m.jenjang}</td><td className="py-2.5 px-4 text-xs">{m.kecamatan}</td><td className="py-2.5 px-4 text-xs text-gray-500">{m.kepalaMadrasah}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(m)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(m.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NSM/NPSN</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Kecamatan</th><th className="py-3 px-4">Kepala</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(m => (<tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{m.nama}</td><td className="py-2.5 px-4 text-xs">{m.nsmNpsn}</td><td className="py-2.5 px-4 text-xs">{m.jenjang}</td><td className="py-2.5 px-4 text-xs">{m.kecamatan}</td><td className="py-2.5 px-4 text-xs text-gray-500">{m.kepalaMadrasah}</td><td className="py-2.5 px-4">{canEdit && <div className="flex gap-1"><button onClick={()=>openEdit(m)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(m.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div>}</td></tr>))}</tbody></table></div></div>
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
@@ -135,7 +140,7 @@ function MadrasahTab({ refresh }) {
   );
 }
 
-function GuruTab({ refresh }) {
+function GuruTab({ refresh, canEdit }) {
   const data = getData();
   const [list, setList] = useState(data.guru);
   const [search, setSearch] = useState('');
@@ -182,8 +187,8 @@ function GuruTab({ refresh }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap items-center"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari guru..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} /><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIP</th><th className="py-3 px-4">Mapel</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(g=>(<tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{g.nama}</td><td className="py-2.5 px-4 text-xs">{g.nip||'-'}</td><td className="py-2.5 px-4 text-xs">{g.mapel||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{g.madrasahNama||'-'}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(g)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(g.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      <div className="flex gap-3 flex-wrap items-center"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari guru..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>{canEdit && <TemplateImportExport onTemplate={handleTemplate} onImport={handleImport} onExport={handleExport} />}{canEdit && <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>}</div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIP</th><th className="py-3 px-4">Mapel</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(g=>(<tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{g.nama}</td><td className="py-2.5 px-4 text-xs">{g.nip||'-'}</td><td className="py-2.5 px-4 text-xs">{g.mapel||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{g.madrasahNama||'-'}</td><td className="py-2.5 px-4">{canEdit && <div className="flex gap-1"><button onClick={()=>openEdit(g)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(g.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div>}</td></tr>))}</tbody></table></div></div>
       {showModal && <GuruModal form={form} setForm={setForm} save={save} close={()=>setShowModal(false)} madrasahList={madrasahList} />}
     </div>
   );
@@ -195,7 +200,7 @@ function GuruModal({ form, setForm, save, close, madrasahList }) {
   );
 }
 
-function KelasTab({ refresh }) {
+function KelasTab({ refresh, canEdit }) {
   const data = getData();
   const [list, setList] = useState(data.kelas);
   const [search, setSearch] = useState('');
@@ -217,8 +222,8 @@ function KelasTab({ refresh }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari kelas..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button></div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Kelas</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Wali Kelas</th><th className="py-3 px-4">L</th><th className="py-3 px-4">P</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(k=>(<tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{k.nama}</td><td className="py-2.5 px-4 text-xs">{k.jenjang}</td><td className="py-2.5 px-4 text-xs">{k.waliKelas||'-'}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaL}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaP}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(k)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(k.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      <div className="flex gap-3 flex-wrap"><div className="relative flex-1 max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari kelas..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>{canEdit && <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah</button>}</div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Kelas</th><th className="py-3 px-4">Jenjang</th><th className="py-3 px-4">Wali Kelas</th><th className="py-3 px-4">L</th><th className="py-3 px-4">P</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.map(k=>(<tr key={k.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{k.nama}</td><td className="py-2.5 px-4 text-xs">{k.jenjang}</td><td className="py-2.5 px-4 text-xs">{k.waliKelas||'-'}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaL}</td><td className="py-2.5 px-4 text-xs">{k.jmlSiswaP}</td><td className="py-2.5 px-4">{canEdit && <div className="flex gap-1"><button onClick={()=>openEdit(k)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(k.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div>}</td></tr>))}</tbody></table></div></div>
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}><div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white"><h3 className="font-semibold">{form.id?'Edit':'Tambah'} Kelas</h3><button onClick={()=>setShowModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5"/></button></div><div className="p-4 space-y-3"><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label><input value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Jenjang</label><select value={form.jenjang} onChange={e=>setForm({...form,jenjang:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none">{JENJANG.map(j=><option key={j}>{j}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Wali Kelas</label><input value={form.waliKelas} onChange={e=>setForm({...form,waliKelas:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Madrasah</label><select value={form.madrasahId} onChange={e=>setForm({...form,madrasahId:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"><option value="">Pilih...</option>{madrasahList.map(m=><option key={m.id} value={m.id}>{m.nama}</option>)}</select></div></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-sm font-medium text-gray-700 mb-1">Siswa Laki-laki</label><input type="number" min="0" value={form.jmlSiswaL} onChange={e=>setForm({...form,jmlSiswaL:parseInt(e.target.value)||0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Siswa Perempuan</label><input type="number" min="0" value={form.jmlSiswaP} onChange={e=>setForm({...form,jmlSiswaP:parseInt(e.target.value)||0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Tahun Pelajaran</label><input value={form.tahunPelajaran} onChange={e=>setForm({...form,tahunPelajaran:e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div></div><div className="flex gap-3 p-4 border-t"><button onClick={save} className="flex-1 py-2.5 bg-[#102a4d] text-white rounded-lg text-sm font-medium hover:bg-[#0a1f3b] flex items-center justify-center gap-2"><Save className="w-4 h-4"/>Simpan</button><button onClick={()=>setShowModal(false)} className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Batal</button></div></div></div>
       )}
@@ -226,7 +231,7 @@ function KelasTab({ refresh }) {
   );
 }
 
-function MuridTab({ refresh }) {
+function MuridTab({ refresh, canEdit }) {
   const data = getData();
   const [list, setList] = useState(data.murid || []);
   const [search, setSearch] = useState('');
@@ -326,12 +331,12 @@ function MuridTab({ refresh }) {
         <div className="relative flex-1 min-w-[200px] max-w-md"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input type="text" placeholder="Cari nama/NIS/NISN..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none"/></div>
         <select value={filterMadrasah} onChange={e=>{setFilterMadrasah(e.target.value); setFilterKelas('');}} className="px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Semua Madrasah</option>{madrasahList.map(m=><option key={m.id} value={m.id}>{m.nama}</option>)}</select>
         <select value={filterKelas} onChange={e=>setFilterKelas(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm"><option value="">Semua Kelas</option>{kelasList.filter(k=>!filterMadrasah||k.madrasahId===filterMadrasah).map(k=><option key={k.id} value={k.id}>{k.nama} ({k.jenjang})</option>)}</select>
-        <button onClick={()=>setShowImport(true)} className="px-4 py-2 bg-[#2fa295] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#278f84]"><Plus className="w-4 h-4"/>Impor Bulk</button>
-        <TemplateImportExport onTemplate={handleTemplate} onImport={handleImportFile} onExport={handleExport} />
-        <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah Murid</button>
+        {canEdit && <button onClick={()=>setShowImport(true)} className="px-4 py-2 bg-[#2fa295] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#278f84]"><Plus className="w-4 h-4"/>Impor Bulk</button>}
+        {canEdit && <TemplateImportExport onTemplate={handleTemplate} onImport={handleImportFile} onExport={handleExport} />}
+        {canEdit && <button onClick={openAdd} className="px-4 py-2 bg-[#102a4d] text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-[#0a1f3b]"><Plus className="w-4 h-4"/>Tambah Murid</button>}
       </div>
       <div className="text-xs text-gray-500">Total: <b>{filtered.length}</b> murid {filterKelas && `di kelas ini`}</div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIS</th><th className="py-3 px-4">NISN</th><th className="py-3 px-4">JK</th><th className="py-3 px-4">Kelas</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.length===0?(<tr><td colSpan={7} className="py-6 text-center text-xs text-gray-400">Belum ada murid. Klik <b>Tambah Murid</b> atau <b>Impor Bulk</b>.</td></tr>):filtered.map(s=>(<tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{s.nama}</td><td className="py-2.5 px-4 text-xs">{s.nis||'-'}</td><td className="py-2.5 px-4 text-xs">{s.nisn||'-'}</td><td className="py-2.5 px-4 text-xs"><span className={`px-2 py-0.5 rounded text-xs ${s.jenisKelamin==='L'?'bg-blue-100 text-blue-700':'bg-pink-100 text-pink-700'}`}>{s.jenisKelamin}</span></td><td className="py-2.5 px-4 text-xs">{s.kelasNama||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{s.madrasahNama||'-'}</td><td className="py-2.5 px-4"><div className="flex gap-1"><button onClick={()=>openEdit(s)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(s.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div></td></tr>))}</tbody></table></div></div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr className="text-left text-xs text-gray-500 uppercase"><th className="py-3 px-4">Nama</th><th className="py-3 px-4">NIS</th><th className="py-3 px-4">NISN</th><th className="py-3 px-4">JK</th><th className="py-3 px-4">Kelas</th><th className="py-3 px-4">Madrasah</th><th className="py-3 px-4 w-20">Aksi</th></tr></thead><tbody>{filtered.length===0?(<tr><td colSpan={7} className="py-6 text-center text-xs text-gray-400">Belum ada murid. Klik <b>Tambah Murid</b> atau <b>Impor Bulk</b>.</td></tr>):filtered.map(s=>(<tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50"><td className="py-2.5 px-4 font-medium text-xs">{s.nama}</td><td className="py-2.5 px-4 text-xs">{s.nis||'-'}</td><td className="py-2.5 px-4 text-xs">{s.nisn||'-'}</td><td className="py-2.5 px-4 text-xs"><span className={`px-2 py-0.5 rounded text-xs ${s.jenisKelamin==='L'?'bg-blue-100 text-blue-700':'bg-pink-100 text-pink-700'}`}>{s.jenisKelamin}</span></td><td className="py-2.5 px-4 text-xs">{s.kelasNama||'-'}</td><td className="py-2.5 px-4 text-xs text-gray-500">{s.madrasahNama||'-'}</td><td className="py-2.5 px-4">{canEdit && <div className="flex gap-1"><button onClick={()=>openEdit(s)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>del(s.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></div>}</td></tr>))}</tbody></table></div></div>
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
@@ -386,7 +391,7 @@ function MuridTab({ refresh }) {
   );
 }
 
-function IndikatorTab({ refresh }) {
+function IndikatorTab({ refresh, canEdit }) {
   const data = getData();
   const [indikatorPC, setIndikatorPC] = useState(data.indikatorPancaCinta);
   const [expanded, setExpanded] = useState(null);
@@ -417,11 +422,11 @@ function IndikatorTab({ refresh }) {
           </button>
           {expanded === pc.id && (
             <div className="p-4 space-y-3">
-              {pc.indikator.map(ind => <IndikatorRow key={ind.id} ind={ind} pcId={pc.id} onEdit={editIndikator} onDelete={deleteIndikator} />)}
-              <div className="flex gap-2 pt-2 border-t">
+              {pc.indikator.map(ind => <IndikatorRow key={ind.id} ind={ind} pcId={pc.id} onEdit={editIndikator} onDelete={deleteIndikator} canEdit={canEdit} />)}
+              {canEdit && <div className="flex gap-2 pt-2 border-t">
                 <input type="text" placeholder="Tambah indikator baru..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" value={addIndikator.pcId === pc.id ? addIndikator.teks : ''} onChange={e => setAddIndikator({ pcId: pc.id, teks: e.target.value })} onKeyDown={e => e.key === 'Enter' && addNewIndikator(pc.id)} />
                 <button onClick={() => addNewIndikator(pc.id)} className="px-4 py-2 bg-[#2fa295] text-white rounded-lg text-sm font-medium hover:bg-[#278f84]"><Plus className="w-4 h-4" /></button>
-              </div>
+              </div>}
             </div>
           )}
         </div>
@@ -430,13 +435,15 @@ function IndikatorTab({ refresh }) {
   );
 }
 
-function IndikatorRow({ ind, pcId, onEdit, onDelete }) {
+function IndikatorRow({ ind, pcId, onEdit, onDelete, canEdit }) {
   const [editing, setEditing] = useState(false);
   const [teks, setTeks] = useState(ind.teks);
   const handleSave = () => { if (!teks.trim()) return; onEdit(pcId, ind.id, teks.trim()); setEditing(false); };
   return (
     <div className="flex items-center gap-2 py-1.5">
-      {editing ? (<><input type="text" value={teks} onChange={e=>setTeks(e.target.value)} className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" onKeyDown={e=>e.key==='Enter'&&handleSave()} /><button onClick={handleSave} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Save className="w-4 h-4"/></button><button onClick={()=>{setTeks(ind.teks);setEditing(false)}} className="p-1.5 text-gray-400 hover:bg-gray-50 rounded"><X className="w-4 h-4"/></button></>) : (<><span className="flex-1 text-sm text-gray-700">{ind.teks}</span><button onClick={()=>setEditing(true)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>onDelete(pcId, ind.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></>)}
+      {editing ? (<><input type="text" value={teks} onChange={e=>setTeks(e.target.value)} className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#102a4d] outline-none" onKeyDown={e=>e.key==='Enter'&&handleSave()} /><button onClick={handleSave} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><Save className="w-4 h-4"/></button><button onClick={()=>{setTeks(ind.teks);setEditing(false)}} className="p-1.5 text-gray-400 hover:bg-gray-50 rounded"><X className="w-4 h-4"/></button></>) : (<><span className="flex-1 text-sm text-gray-700">{ind.teks}</span>{canEdit && <><button onClick={()=>setEditing(true)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>onDelete(pcId, ind.id)} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5"/></button></>}</>)}
     </div>
   );
 }
+
+

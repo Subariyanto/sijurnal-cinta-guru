@@ -9,7 +9,7 @@ import {
 
 const allMenus = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator', 'pengawas'] },
+  { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'kamad', 'pengawas'] },
   { to: '/perencanaan', label: 'Perencanaan KBC', icon: FileText, roles: null },
   { to: '/jurnal', label: 'Jurnal Harian Guru', icon: Edit3, roles: null },
   { to: '/pembiasaan-harian', label: 'Jurnal Pembiasaan Harian', icon: CalendarCheck, roles: null },
@@ -20,7 +20,7 @@ const allMenus = [
   { to: '/laporan', label: 'Rekap & Laporan', icon: BarChart3, roles: null },
   { to: '/rekap-instrumen', label: 'Rekap Instrumen KBC', icon: Layers, roles: null },
   { to: '/laporan-pengawas', label: 'Laporan Monev Pengawas', icon: ClipboardCheck, roles: ['pengawas', 'admin'] },
-  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'operator', 'pengawas'] },
+  { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'pengawas'] },
   { to: '/panduan', label: 'Panduan Penggunaan', icon: HelpCircle, roles: null },
 ];
 
