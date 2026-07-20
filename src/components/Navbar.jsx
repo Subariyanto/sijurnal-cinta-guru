@@ -43,8 +43,8 @@ const groups = [
   {
     label: 'Administrasi', icon: SlidersHorizontal,
     items: [
-      { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'operator', 'pengawas'] },
-      { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'operator', 'pengawas'] },
+      { to: '/master-data', label: 'Master Data', icon: Building2, roles: ['admin', 'kamad', 'pengawas'] },
+      { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin', 'kamad', 'pengawas'] },
       { to: '/panduan', label: 'Panduan Penggunaan', icon: HelpCircle },
     ],
   },
